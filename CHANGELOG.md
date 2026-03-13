@@ -1,4 +1,9 @@
-## Unreleased
+## v0.9.1 (2026-03-13)
+
+### Fix
+
+- **auth**: accept ec private keys in with_xades
+- update OpenAPI spec refresh workflow
 
 ## v0.9.0 (2026-03-07)
 
