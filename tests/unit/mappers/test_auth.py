@@ -122,6 +122,22 @@ class TestAuthResponseMapper:
         assert output.authentication_method == "qualified_seal"
         assert output.authentication_method_code == "xades.qualified-seal"
 
+    def test_map_authentication_session_ksef_certificate(self) -> None:
+        mapped_input = AuthenticationListItemFactory.build(
+            authenticationMethod=spec.AuthenticationMethod.InternalCertificate,
+            authenticationMethodInfo=spec.AuthenticationMethodInfo(
+                category=spec.AuthenticationMethodCategory.XadesSignature,
+                code="xades.ksef-certificate",
+                displayName="Certyfikat KSeF",
+            ),
+        )
+
+        output = from_spec(mapped_input)
+
+        assert output.authentication_method == "ksef_certificate"
+        assert output.authentication_method_category == "xades_signature"
+        assert output.authentication_method_code == "xades.ksef-certificate"
+
     def test_map_authentication_sessions_response(
         self, auth_list_resp: BaseFactory[spec.AuthenticationListResponse]
     ) -> None:

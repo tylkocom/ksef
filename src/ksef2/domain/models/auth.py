@@ -16,6 +16,7 @@ type AuthenticationMethod = Literal[
     "qualified_seal",
     "personal_signature",
     "peppol_signature",
+    "ksef_certificate",
 ]
 
 type AuthenticationMethodCategory = Literal[
@@ -41,6 +42,7 @@ class AuthenticationMethodEnum(StrEnum):
     QUALIFIED_SEAL = "qualified_seal"
     PERSONAL_SIGNATURE = "personal_signature"
     PEPPOL_SIGNATURE = "peppol_signature"
+    KSEF_CERTIFICATE = "ksef_certificate"
 
 
 class AuthenticationMethodCategoryEnum(StrEnum):
