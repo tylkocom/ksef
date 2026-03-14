@@ -108,6 +108,8 @@ def _method_from_code(code: str) -> AuthenticationMethod:
             return "personal_signature"
         case "xades.peppol-signature":
             return "peppol_signature"
+        case "xades.ksef-certificate":
+            return "ksef_certificate"
         case _:
             raise ValueError(f"Unsupported authentication method code: {code!r}")
 
