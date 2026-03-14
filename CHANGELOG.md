@@ -1,3 +1,9 @@
+## v0.9.2 (2026-03-14)
+
+### Fix
+
+- **auth**: add support for ksef certificate authentication
+
 ## v0.9.1 (2026-03-13)
 
 ### Fix
