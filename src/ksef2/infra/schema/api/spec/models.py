@@ -900,7 +900,8 @@ class ForbiddenProblemDetails(BaseModel):
     | ip-not-allowed | Żądanie pochodzi z adresu IP innego niż wskazany podczas uwierzytelnienia. | 
     | insufficient-resource-access | Brak dostępu do wskazanego zasobu. | 
     | auth-method-not-allowed | Ta operacja nie jest dostępna dla użytej metody uwierzytelnienia. | 
-    | security-service-blocked | Żądanie zostało zablokowane przez mechanizmy bezpieczeństwa. |
+    | security-service-blocked | Żądanie zostało zablokowane przez mechanizmy bezpieczeństwa. | 
+    | context-type-not-allowed | Operacja nie jest dostępna dla uwierzytelnionego typu kontekstu. |
     """
     security: dict[str, Any] | None = None
     """
@@ -912,6 +913,7 @@ class ForbiddenProblemDetails(BaseModel):
     | insufficient-resource-access  ||
     | auth-method-not-allowed | authenticationMethodCategory: string  |
     | security-service-blocked | incidentId: string, clientIp: string  |
+    | context-type-not-allowed | contextIdentifierType: string |
     """
     traceId: str | None = None
     """
@@ -1054,13 +1056,15 @@ class InvoiceQueryFormType(StrEnum):
     | --- | --- |
     | FA | Faktura VAT |
     | PEF | Faktura PEF |
-    | RR | Faktura RR |
+    | RR ![Deprecated](https://img.shields.io/badge/Deprecated-orange) | Faktura RR |
+    | FA_RR | Faktura RR |
 
     """
 
     FA = "FA"
     PEF = "PEF"
     RR = "RR"
+    FA_RR = "FA_RR"
 
 
 class InvoiceQuerySubjectType(StrEnum):
@@ -1114,8 +1118,8 @@ class InvoiceType(StrEnum):
     | VatPef | (PEF) Podstawowa |
     | VatPefSp | (PEF) Specjalizowana |
     | KorPef | (PEF) Korygująca |
-    | VatRr | (RR) Podstawowa |
-    | KorVatRr | (RR) Korygująca |
+    | VatRr | (FA_RR) Podstawowa |
+    | KorVatRr | (FA_RR) Korygująca |
 
     """
 
@@ -1206,7 +1210,8 @@ class OpenOnlineSessionRequest(BaseModel):
     | [PEF (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/PEF/Schemat_PEF(3)_v2-1.xsd) | 2-1 | PEF |  |  |
     | [PEF_KOR (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/PEF/Schemat_PEF_KOR(3)_v2-1.xsd) | 2-1 | PEF |  |  |
     | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_RR(1)_v1-0E.xsd) | 1-0E | RR |  | 23.03.2026 |
-    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_RR(1)_v1-1E.xsd) | 1-1E | RR |  |  |
+    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_RR(1)_v1-1E.xsd) | 1-1E | RR |  | 30.03.2026 |
+    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_FA_RR(1)_v1-1E.xsd) | 1-1E | FA_RR |  |  |
 
     """
     encryption: EncryptionInfo
@@ -2956,7 +2961,8 @@ class InvoiceQueryFilters(BaseModel):
     | --- | --- |
     | FA | Faktura VAT |
     | PEF | Faktura PEF |
-    | RR | Faktura RR |
+    | RR ![Deprecated](https://img.shields.io/badge/Deprecated-orange) | Faktura RR |
+    | FA_RR | Faktura RR |
 
     """
     invoiceTypes: list[InvoiceType] | None = None
@@ -2974,8 +2980,8 @@ class InvoiceQueryFilters(BaseModel):
     | VatPef | (PEF) Podstawowa |
     | VatPefSp | (PEF) Specjalizowana |
     | KorPef | (PEF) Korygująca |
-    | VatRr | (RR) Podstawowa |
-    | KorVatRr | (RR) Korygująca |
+    | VatRr | (FA_RR) Podstawowa |
+    | KorVatRr | (FA_RR) Korygująca |
 
     """
     hasAttachment: bool | None = None
@@ -3983,6 +3989,10 @@ class InvoiceExportRequest(BaseModel):
     """
     Informacje wymagane do zaszyfrowania wyniku zapytania.
     """
+    onlyMetadata: bool = False
+    """
+    Określa, czy zwrócić tylko metadane faktur (plik _metadata.json bez faktur).
+    """
     filters: InvoiceQueryFilters
     """
     Zestaw filtrów do wyszukiwania faktur.
@@ -4071,7 +4081,8 @@ class OpenBatchSessionRequest(BaseModel):
     | [FA (2)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/FA/schemat_FA(2)_v1-0E.xsd) | 1-0E | FA |  |  |
     | [FA (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/FA/schemat_FA(3)_v1-0E.xsd) | 1-0E | FA |  |  |
     | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_RR(1)_v1-0E.xsd) | 1-0E | RR |  | 23.03.2026 |
-    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_RR(1)_v1-1E.xsd) | 1-1E | RR |  |  |
+    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_RR(1)_v1-1E.xsd) | 1-1E | RR |  | 30.03.2026 |
+    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_FA_RR(1)_v1-1E.xsd) | 1-1E | FA_RR |  |  |
 
     """
     batchFile: BatchFileInfo
@@ -4862,7 +4873,7 @@ class InvoiceMetadata(BaseModel):
     """
     vatAmount: float
     """
-    Łączna kwota VAT.
+    Łączna kwota VAT wyrażona w PLN.
     """
     currency: Annotated[str, Field(max_length=3, min_length=3)]
     """
@@ -4887,8 +4898,8 @@ class InvoiceMetadata(BaseModel):
     | VatPef | (PEF) Podstawowa |
     | VatPefSp | (PEF) Specjalizowana |
     | KorPef | (PEF) Korygująca |
-    | VatRr | (RR) Podstawowa |
-    | KorVatRr | (RR) Korygująca |
+    | VatRr | (FA_RR) Podstawowa |
+    | KorVatRr | (FA_RR) Korygująca |
 
     """
     formCode: FormCode
@@ -4903,7 +4914,8 @@ class InvoiceMetadata(BaseModel):
     | [PEF (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/PEF/Schemat_PEF(3)_v2-1.xsd) | 2-1 | PEF |  |  |
     | [PEF_KOR (3)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/PEF/Schemat_PEF_KOR(3)_v2-1.xsd) | 2-1 | PEF |  |  |
     | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_RR(1)_v1-0E.xsd) | 1-0E | RR |  | 23.03.2026 |
-    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_RR(1)_v1-1E.xsd) | 1-1E | RR |  |  |
+    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_RR(1)_v1-1E.xsd) | 1-1E | RR |  | 30.03.2026 |
+    | [FA_RR (1)](https://github.com/CIRFMF/ksef-docs/blob/main/faktury/schemy/RR/schemat_FA_RR(1)_v1-1E.xsd) | 1-1E | FA_RR |  |  |
 
     """
     isSelfInvoicing: bool
