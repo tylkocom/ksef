@@ -7,14 +7,14 @@ from lxml import etree
 from xsdata.formats.dataclass.serializers import XmlSerializer
 from xsdata.formats.dataclass.serializers.config import SerializerConfig
 
+from ksef2.domain.models.fa3.body import VatRate
 from ksef2.domain.models.fa3.invoice import (
     InvoiceAddress,
-    InvoiceDetails,
     InvoiceEntity,
     InvoiceHeader,
-    InvoiceLine,
     KsefInvoice,
 )
+from ksef2.domain.models.fa3 import InvoiceLine, KsefInvoiceBody
 from ksef2.infra.mappers.invoices.fa3.invoice import to_spec as invoice_to_spec
 from ksef2.infra.schema.fa3.models.schemat import __NAMESPACE__
 from ksef2.services.renderers import InvoicePDFExporter
@@ -37,6 +37,26 @@ class ExampleConfig:
 
 
 def build_invoice() -> KsefInvoice:
+    body = KsefInvoiceBody(
+        issue_place="Warszawa",
+        issue_date=date(2026, 3, 29),
+        period_start=date(2026, 3, 1),
+        period_end=date(2026, 3, 31),
+        invoice_number="FV/1/2026",
+        lines=[
+            InvoiceLine(
+                name="Consulting service",
+                supply_date=date(2026, 3, 29),
+                unit_of_measure="h",
+                quantity=Decimal("10"),
+                unit_price_net=Decimal("100.00"),
+                discount_amount=Decimal("0.00"),
+                net_amount=Decimal("1000.00"),
+                vat_rate=VatRate.VAT_23,
+            ),
+        ],
+    )
+
     return KsefInvoice(
         invoice_header=InvoiceHeader(),
         seller=InvoiceEntity(
@@ -56,20 +76,7 @@ def build_invoice() -> KsefInvoice:
                 address_line_2="10115 Berlin",
             ),
         ),
-        details=InvoiceDetails(
-            invoice_number="FV/1/2026",
-            issue_date=date(2026, 3, 29),
-        ),
-        lines=[
-            InvoiceLine(
-                name="Consulting service",
-                quantity=Decimal("10"),
-                unit_price_net=Decimal("100.00"),
-                net_amount=Decimal("1000.00"),
-                vat_rate="23",
-                vat_amount=Decimal("230.00"),
-            ),
-        ],
+        body=body,
     )
 
 
@@ -93,8 +100,7 @@ def validate_invoice_xml(xml_path: Path, schema_path: Path) -> None:
     if schema.validate(xml_doc):
         return
 
-    errors = "\n".join(error.message for error in schema.error_log)
-    raise ValueError(f"Generated FA(3) XML failed XSD validation:\n{errors}")
+    raise ValueError(f"Generated FA(3) XML failed XSD validation:\n{schema.error_log}")
 
 
 def export_invoice_pdf(xml_path: Path, pdf_output_path: Path) -> Path:

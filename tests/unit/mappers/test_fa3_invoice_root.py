@@ -3,10 +3,10 @@ from decimal import Decimal
 
 from ksef2.domain.models.fa3 import (
     InvoiceAddress,
-    InvoiceDetails,
     InvoiceEntity,
-    InvoiceLine,
     InvoiceHeader,
+    InvoiceLine,
+    KsefInvoiceBody,
     KsefInvoice,
 )
 from ksef2.infra.mappers.invoices.fa3.invoice import to_spec as invoice_to_spec
@@ -36,10 +36,6 @@ def test_invoice_to_spec_assembles_root_faktura() -> None:
                 generation_timestamp=datetime(2026, 2, 1, 12, 30, 45),
                 system_info="ACME ERP",
             ),
-            details=InvoiceDetails(
-                invoice_number="FV/1/2026",
-                issue_date=date(2026, 3, 29),
-            ),
             seller=InvoiceEntity(
                 tax_id="1234567890",
                 name="Seller Sp. z o.o.",
@@ -52,25 +48,29 @@ def test_invoice_to_spec_assembles_root_faktura() -> None:
                     address_line_1="Unter den Linden 1",
                 ),
             ),
-            lines=[
-                InvoiceLine(
-                    name="Consulting service",
-                    quantity=Decimal("10"),
-                    unit_price_net=Decimal("100.00"),
-                    net_amount=Decimal("1000.00"),
-                    vat_rate="23",
-                    vat_amount=Decimal("230.00"),
-                ),
-                InvoiceLine(
-                    name="Support service",
-                    unit_of_measure="h",
-                    quantity=Decimal("5"),
-                    unit_price_net=Decimal("50.00"),
-                    net_amount=Decimal("250.00"),
-                    vat_rate="23",
-                    vat_amount=Decimal("57.50"),
-                ),
-            ],
+            body=KsefInvoiceBody(
+                issue_date=date(2026, 3, 29),
+                invoice_number="FV/1/2026",
+                lines=[
+                    InvoiceLine(
+                        name="Consulting service",
+                        quantity=Decimal("10"),
+                        unit_price_net=Decimal("100.00"),
+                        net_amount=Decimal("1000.00"),
+                        vat_rate="23",
+                        vat_amount=Decimal("230.00"),
+                    ),
+                    InvoiceLine(
+                        name="Support service",
+                        unit_of_measure="h",
+                        quantity=Decimal("5"),
+                        unit_price_net=Decimal("50.00"),
+                        net_amount=Decimal("250.00"),
+                        vat_rate="23",
+                        vat_amount=Decimal("57.50"),
+                    ),
+                ],
+            ),
         )
     )
 

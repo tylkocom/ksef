@@ -16,10 +16,10 @@ from ksef2.domain.models.fa3.invoice import (
     InvoiceAddress,
     InvoiceDetails,
     InvoiceEntity,
-    InvoiceLine,
     InvoiceHeader,
     KsefInvoice,
 )
+from ksef2.domain.models.fa3.body import InvoiceLine, KsefInvoiceBody
 
 __all__ = [
     "Attachment",
@@ -33,6 +33,7 @@ __all__ = [
     "InvoiceEntity",
     "InvoiceLine",
     "InvoiceHeader",
+    "KsefInvoiceBody",
     "KsefInvoice",
     "TableColumnType",
     "TableHeader",

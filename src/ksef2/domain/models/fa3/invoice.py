@@ -8,6 +8,7 @@ from typing import Annotated
 from pydantic import Field, field_validator, model_validator
 
 from ksef2.domain.models.base import KSeFBaseModel
+from ksef2.domain.models.fa3.body import KsefInvoiceBody
 
 
 class InvoiceDetails(KSeFBaseModel):
@@ -16,35 +17,6 @@ class InvoiceDetails(KSeFBaseModel):
     invoice_number: str
     issue_date: date
     currency: str = "PLN"
-
-
-class InvoiceLine(KSeFBaseModel):
-    """Public FA(3) invoice-line model covering the full row payload."""
-
-    name: str
-    unit_of_measure: str = "szt"
-    quantity: Decimal
-    unit_price_net: Decimal
-    net_amount: Decimal
-    vat_rate: str
-    vat_amount: Decimal
-    unique_id: str | None = None
-    supply_date: date | None = None
-    sku: str | None = None
-    gtin: str | None = None
-    pkwiu: str | None = None
-    cn: str | None = None
-    pkob: str | None = None
-    unit_price_gross: Decimal | None = None
-    discount_amount: Decimal | None = None
-    gross_amount: Decimal | None = None
-    vat_rate_xii: Decimal | None = None
-    annex_15_marker: bool | None = None
-    excise_amount: Decimal | None = None
-    gtu_code: str | None = None
-    procedure: str | None = None
-    currency_exchange_rate: Decimal | None = None
-    before_correction: bool | None = None
 
 
 class InvoiceHeader(KSeFBaseModel):
@@ -118,10 +90,6 @@ class InvoiceEntity(KSeFBaseModel):
         return self
 
 
-class KsefInvoiceBody(KSeFBaseModel):
-    pass
-
-
 class KsefInvoice(KSeFBaseModel):
     """Root public aggregate for a minimal FA(3) invoice draft."""
 
@@ -132,29 +100,19 @@ class KsefInvoice(KSeFBaseModel):
     seller: Annotated[InvoiceEntity, Field(description="Maps to Faktura.Podmiot1")]
     buyer: Annotated[InvoiceEntity, Field(description="Maps to Faktura.Podmiot2")]
 
-    details: Annotated[
-        InvoiceDetails, Field(description="Maps to selected Faktura.Fa fields")
-    ]
-
-    lines: Annotated[
-        list[InvoiceLine],
-        Field(min_length=1, description="Maps to Faktura.Fa.FaWiersz"),
-    ]
+    body: Annotated[KsefInvoiceBody, Field(description="Maps to Faktura.Fa")]
 
     @property
     def total_gross(self) -> Decimal:
-        return sum(
-            (line.net_amount + line.vat_amount for line in self.lines),
-            start=Decimal("0"),
-        )
+        return self.body.total_gross
 
     @property
     def total_net(self) -> Decimal:
-        return sum((line.net_amount for line in self.lines), start=Decimal("0"))
+        return self.body.total_net
 
     @property
     def total_vat(self) -> Decimal:
-        return sum((line.vat_amount for line in self.lines), start=Decimal("0"))
+        return self.body.total_vat
 
     @model_validator(mode="after")
     def _validate_seller_tax_id(self) -> "KsefInvoice":

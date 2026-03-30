@@ -7,10 +7,10 @@ from pydantic import ValidationError
 from ksef2.domain.models.fa3 import (
     ContactInfo,
     InvoiceAddress,
-    InvoiceDetails,
     InvoiceEntity,
-    InvoiceLine,
     InvoiceHeader,
+    InvoiceLine,
+    KsefInvoiceBody,
     KsefInvoice,
 )
 
@@ -101,10 +101,6 @@ def test_ksef_invoice_rejects_seller_without_tax_id() -> None:
                 generation_timestamp=datetime(2026, 2, 1, 12, 30, 45),
                 system_info="ACME ERP",
             ),
-            details=InvoiceDetails(
-                invoice_number="FV/1/2026",
-                issue_date=date(2026, 3, 29),
-            ),
             seller=InvoiceEntity(
                 name="Seller Sp. z o.o.",
                 address=make_polish_address(),
@@ -113,17 +109,22 @@ def test_ksef_invoice_rejects_seller_without_tax_id() -> None:
                 name="Buyer Sp. z o.o.",
                 address=make_polish_address(),
             ),
-            lines=[make_invoice_line()],
+            body=KsefInvoiceBody(
+                issue_date=date(2026, 3, 29),
+                invoice_number="FV/1/2026",
+                lines=[make_invoice_line()],
+            ),
         )
 
 
-def test_invoice_details_defaults_currency_to_pln() -> None:
-    details = InvoiceDetails(
-        invoice_number="FV/1/2026",
+def test_invoice_body_defaults_currency_to_pln() -> None:
+    body = KsefInvoiceBody(
         issue_date=date(2026, 3, 29),
+        invoice_number="FV/1/2026",
+        lines=[make_invoice_line()],
     )
 
-    assert details.currency == "PLN"
+    assert body.currency == "PLN"
 
 
 def test_invoice_system_context_accepts_valid_values() -> None:
@@ -198,10 +199,6 @@ def test_ksef_invoice_accepts_lines_collection() -> None:
             generation_timestamp=datetime(2026, 2, 1, 12, 30, 45),
             system_info="ACME ERP",
         ),
-        details=InvoiceDetails(
-            invoice_number="FV/1/2026",
-            issue_date=date(2026, 3, 29),
-        ),
         seller=InvoiceEntity(
             tax_id="1234567890",
             name="Seller Sp. z o.o.",
@@ -214,11 +211,15 @@ def test_ksef_invoice_accepts_lines_collection() -> None:
                 address_line_1="Unter den Linden 1",
             ),
         ),
-        lines=[make_invoice_line()],
+        body=KsefInvoiceBody(
+            issue_date=date(2026, 3, 29),
+            invoice_number="FV/1/2026",
+            lines=[make_invoice_line()],
+        ),
     )
 
-    assert len(invoice.lines) == 1
-    assert invoice.lines[0].name == "Consulting service"
+    assert len(invoice.body.lines) == 1
+    assert invoice.body.lines[0].name == "Consulting service"
     assert invoice.total_net == Decimal("1000.00")
     assert invoice.total_vat == Decimal("230.00")
     assert invoice.total_gross == Decimal("1230.00")
@@ -230,10 +231,6 @@ def test_ksef_invoice_rejects_empty_lines_collection() -> None:
             invoice_header=InvoiceHeader(
                 generation_timestamp=datetime(2026, 2, 1, 12, 30, 45),
                 system_info="ACME ERP",
-            ),
-            details=InvoiceDetails(
-                invoice_number="FV/1/2026",
-                issue_date=date(2026, 3, 29),
             ),
             seller=InvoiceEntity(
                 tax_id="1234567890",
@@ -247,7 +244,11 @@ def test_ksef_invoice_rejects_empty_lines_collection() -> None:
                     address_line_1="Unter den Linden 1",
                 ),
             ),
-            lines=[],
+            body=KsefInvoiceBody(
+                issue_date=date(2026, 3, 29),
+                invoice_number="FV/1/2026",
+                lines=[],
+            ),
         )
 
 
