@@ -1,0 +1,149 @@
+"""Async root client for authenticated and unauthenticated SDK entry points."""
+
+from functools import cached_property
+from types import TracebackType
+from typing import Self, final
+
+import httpx
+
+from ksef2.clients.async_auth import AsyncAuthClient
+from ksef2.clients.async_encryption import AsyncEncryptionClient
+from ksef2.clients.async_peppol import AsyncPeppolClient
+from ksef2.clients.async_testdata import AsyncTestDataClient
+from ksef2.config import (
+    ConnectionPoolConfig,
+    Environment,
+    TimeoutConfig,
+    TlsConfig,
+    TransportConfig,
+)
+from ksef2.core import exceptions, stores
+from ksef2.core.async_http import AsyncHttpTransport
+from ksef2.core.middlewares.async_exceptions import AsyncKSeFExceptionMiddleware
+from ksef2.core.middlewares.async_lifecycle import (
+    AsyncClientLifecycleMiddleware,
+    AsyncClientLifecycleState,
+)
+from ksef2.core.middlewares.async_retry import AsyncRetryMiddleware
+
+
+@final
+class AsyncClient:
+    """Root async KSeF SDK client responsible for transport and lifecycle management."""
+
+    def __init__(
+        self,
+        environment: Environment = Environment.PRODUCTION,
+        *,
+        transport_config: TransportConfig | None = None,
+        http_client: httpx.AsyncClient | None = None,
+    ) -> None:
+        self._environment = environment
+        self._transport_config = transport_config or TransportConfig()
+        self._http_client = http_client or self._build_http_client(
+            environment=environment,
+            config=self._transport_config,
+        )
+        self._owns_http_client = http_client is None
+        self._lifecycle_state = AsyncClientLifecycleState()
+        self._transport = AsyncKSeFExceptionMiddleware(
+            AsyncRetryMiddleware(
+                AsyncClientLifecycleMiddleware(
+                    AsyncHttpTransport(client=self._http_client, headers={}),
+                    self._lifecycle_state,
+                ),
+                self._transport_config.retry,
+            )
+        )
+        self._certificate_store = stores.CertificateStore()
+
+    @staticmethod
+    def _build_http_client(
+        *,
+        environment: Environment,
+        config: TransportConfig,
+    ) -> httpx.AsyncClient:
+        timeout_cfg: TimeoutConfig = config.timeouts
+        pool_cfg: ConnectionPoolConfig = config.pool
+        tls_cfg: TlsConfig = config.tls
+
+        verify: bool | str = (
+            tls_cfg.ca_bundle_path
+            if tls_cfg.ca_bundle_path is not None
+            else tls_cfg.verify
+        )
+
+        return httpx.AsyncClient(
+            base_url=environment.base_url,
+            timeout=httpx.Timeout(
+                connect=timeout_cfg.connect,
+                read=timeout_cfg.read,
+                write=timeout_cfg.write,
+                pool=timeout_cfg.pool,
+            ),
+            limits=httpx.Limits(
+                max_connections=pool_cfg.max_connections,
+                max_keepalive_connections=pool_cfg.max_keepalive_connections,
+                keepalive_expiry=pool_cfg.keepalive_expiry,
+            ),
+            verify=verify,
+            proxy=config.proxy_url,
+            trust_env=config.trust_env,
+            http2=config.http2,
+        )
+
+    def _ensure_open(self) -> None:
+        if self._lifecycle_state.closed:
+            raise exceptions.KSeFClientClosedError("Client is closed.")
+
+    @cached_property
+    def authentication(self) -> AsyncAuthClient:
+        self._ensure_open()
+        return AsyncAuthClient(
+            transport=self._transport,
+            certificate_store=self._certificate_store,
+            environment=self._environment,
+        )
+
+    @cached_property
+    def encryption(self) -> AsyncEncryptionClient:
+        self._ensure_open()
+        return AsyncEncryptionClient(self._transport)
+
+    @cached_property
+    def peppol(self) -> AsyncPeppolClient:
+        self._ensure_open()
+        return AsyncPeppolClient(self._transport)
+
+    @cached_property
+    def testdata(self) -> AsyncTestDataClient:
+        self._ensure_open()
+        if self._environment is not Environment.TEST:
+            raise exceptions.KSeFUnsupportedEnvironmentError(
+                "testdata is only available for Environment.TEST"
+            )
+        return AsyncTestDataClient(self._transport)
+
+    async def aclose(self) -> None:
+        if self._lifecycle_state.closed:
+            return
+
+        self._lifecycle_state.closed = True
+
+        for name in ("authentication", "encryption", "peppol", "testdata"):
+            self.__dict__.pop(name, None)
+
+        if self._owns_http_client:
+            await self._http_client.aclose()
+
+    async def __aenter__(self) -> Self:
+        self._ensure_open()
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        await self.aclose()

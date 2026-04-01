@@ -1,0 +1,131 @@
+import asyncio
+from collections.abc import Mapping
+from typing import Any, final, override
+
+import httpx
+
+from ksef2.config import RetryConfig
+from ksef2.core import routes
+from ksef2.core.async_protocols import AsyncMiddleware
+from ksef2.core.middlewares.async_base import AsyncBaseMiddleware
+
+_RETRYABLE_POST_PATHS = frozenset(
+    {
+        routes.AuthRoutes.CHALLENGE,
+        routes.AuthRoutes.REDEEM_TOKEN,
+        routes.AuthRoutes.REFRESH_TOKEN,
+        routes.InvoiceRoutes.QUERY_METADATA,
+        routes.CertificateRoutes.QUERY,
+        routes.CertificateRoutes.RETRIEVE,
+        routes.QueryPermissionsRoutes.QUERY_PERSONAL_GRANTS,
+        routes.QueryPermissionsRoutes.QUERY_AUTHORIZATIONS_GRANTS,
+        routes.QueryPermissionsRoutes.QUERY_EU_ENTITIES_GRANTS,
+        routes.QueryPermissionsRoutes.QUERY_PERSONS_GRANTS,
+        routes.QueryPermissionsRoutes.QUERY_SUBORDINATE_ENTITIES_ROLES,
+        routes.QueryPermissionsRoutes.QUERY_SUBUNITS_GRANTS,
+    }
+)
+
+
+@final
+class AsyncRetryMiddleware(AsyncBaseMiddleware):
+    def __init__(
+        self,
+        transport: AsyncMiddleware,
+        config: RetryConfig,
+    ) -> None:
+        self._next = transport
+        self._config = config
+
+    def _is_retryable_request(self, method: str, path: str) -> bool:
+        if method in {"GET", "DELETE"}:
+            return True
+        return method == "POST" and path in _RETRYABLE_POST_PATHS
+
+    def _is_retryable_status(self, status_code: int) -> bool:
+        return status_code in self._config.retryable_status_codes
+
+    def _parse_retry_after(self, response: httpx.Response) -> float | None:
+        value = response.headers.get("Retry-After")
+        if value is None:
+            return None
+
+        try:
+            delay = float(value)
+        except (TypeError, ValueError):
+            return None
+
+        return max(0.0, min(delay, self._config.max_delay))
+
+    def _backoff_delay(self, attempt: int) -> float:
+        delay = self._config.initial_delay * (
+            self._config.backoff_multiplier ** max(0, attempt - 1)
+        )
+        return min(delay, self._config.max_delay)
+
+    async def _sleep_for(
+        self,
+        attempt: int,
+        response: httpx.Response | None = None,
+    ) -> None:
+        if response is not None:
+            retry_after = self._parse_retry_after(response)
+            if retry_after is not None:
+                await asyncio.sleep(retry_after)
+                return
+
+        await asyncio.sleep(self._backoff_delay(attempt))
+
+    @override
+    async def request(
+        self,
+        method: str,
+        path: str,
+        *,
+        headers: dict[str, str] | None = None,
+        params: Mapping[str, Any] | None = None,
+        json: dict[str, Any] | None = None,
+        content: bytes | None = None,
+    ) -> httpx.Response:
+        if self._config.max_attempts <= 1 or not self._is_retryable_request(
+            method, path
+        ):
+            return await self._next.request(
+                method,
+                path,
+                headers=headers,
+                params=params,
+                json=json,
+                content=content,
+            )
+
+        last_response: httpx.Response | None = None
+
+        for attempt in range(1, self._config.max_attempts + 1):
+            try:
+                response = await self._next.request(
+                    method,
+                    path,
+                    headers=headers,
+                    params=params,
+                    json=json,
+                    content=content,
+                )
+            except httpx.TransportError:
+                if attempt >= self._config.max_attempts:
+                    raise
+                await self._sleep_for(attempt)
+                continue
+
+            last_response = response
+            if (
+                response.is_success
+                or not self._is_retryable_status(response.status_code)
+                or attempt >= self._config.max_attempts
+            ):
+                return response
+
+            await self._sleep_for(attempt, response)
+
+        assert last_response is not None
+        return last_response
