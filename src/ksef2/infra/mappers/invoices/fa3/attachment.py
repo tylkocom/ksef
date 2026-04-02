@@ -1,17 +1,16 @@
-"""Mappers for FA3 invoice attachment schema to domain models."""
+"""Mappings between FA(3) attachment domain models and generated schema models."""
+
+from collections.abc import Sequence
+from functools import singledispatch
+from typing import overload
+
+from pydantic import BaseModel
 
 from ksef2.domain.models.fa3.attachment import (
     Attachment,
-    AttachmentMetaData,
     AttachmentTable,
-    AttachmentText,
     DataBlock,
-    TableColumnType,
-    TableHeader,
-    TableHeaderColumn,
-    TableMetaData,
-    TableRow,
-    TableSum,
+    ValueType,
 )
 from ksef2.infra.schema.fa3.models.schemat import (
     FakturaZalacznik,
@@ -22,180 +21,222 @@ from ksef2.infra.schema.fa3.models.schemat import (
     FakturaZalacznikBlokDanychTabelaTmetaDane,
     FakturaZalacznikBlokDanychTabelaTnaglowek,
     FakturaZalacznikBlokDanychTabelaTnaglowekKol,
+    FakturaZalacznikBlokDanychTabelaTnaglowekKolNkom,
+    FakturaZalacznikBlokDanychTabelaTnaglowekKolTyp,
     FakturaZalacznikBlokDanychTabelaWiersz,
     FakturaZalacznikBlokDanychTekst,
 )
 
 
-class AttachmentMapper:
-    """Maps FA3 schema attachment models to domain models."""
+def _to_spec_meta_data(
+    meta_data: Sequence[dict[str, str]] | None,
+) -> list[FakturaZalacznikBlokDanychMetaDane]:
+    if not meta_data:
+        return []
 
-    @staticmethod
-    def map_attachment(schema: FakturaZalacznik) -> Attachment:
-        """Map FakturaZalacznik schema to Attachment domain request.
+    items: list[FakturaZalacznikBlokDanychMetaDane] = []
+    for entry in meta_data:
+        for key, value in entry.items():
+            items.append(
+                FakturaZalacznikBlokDanychMetaDane(
+                    zklucz=key,
+                    zwartosc=value,
+                )
+            )
+    return items
 
-        Args:
-            schema: The FakturaZalacznik schema request from FA3 invoice.
 
-        Returns:
-            Attachment domain request.
-        """
-        return Attachment(
-            data_blocks=[
-                AttachmentMapper.map_data_block(block) for block in schema.blok_danych
+def _to_spec_table_meta_data(
+    meta_data: list[dict[str, str]] | None,
+) -> list[FakturaZalacznikBlokDanychTabelaTmetaDane]:
+    if not meta_data:
+        return []
+
+    items: list[FakturaZalacznikBlokDanychTabelaTmetaDane] = []
+    for entry in meta_data:
+        for key, value in entry.items():
+            items.append(
+                FakturaZalacznikBlokDanychTabelaTmetaDane(
+                    tklucz=key,
+                    twartosc=value,
+                )
+            )
+    return items
+
+
+def _to_spec_column_name(index: int, column_names: list[str] | None) -> str:
+    if column_names is None:
+        return f"Column {index}"
+    return column_names[index - 1]
+
+
+def _to_spec_column_type(
+    value: ValueType,
+) -> FakturaZalacznikBlokDanychTabelaTnaglowekKolTyp:
+    value_type_map: dict[ValueType, FakturaZalacznikBlokDanychTabelaTnaglowekKolTyp] = {
+        "date": FakturaZalacznikBlokDanychTabelaTnaglowekKolTyp.DATE,
+        "datetime": FakturaZalacznikBlokDanychTabelaTnaglowekKolTyp.DATETIME,
+        "decimal": FakturaZalacznikBlokDanychTabelaTnaglowekKolTyp.DEC,
+        "integer": FakturaZalacznikBlokDanychTabelaTnaglowekKolTyp.INT,
+        "time": FakturaZalacznikBlokDanychTabelaTnaglowekKolTyp.TIME,
+        "txt": FakturaZalacznikBlokDanychTabelaTnaglowekKolTyp.TXT,
+    }
+    return value_type_map[value]
+
+
+@overload
+def to_spec(request: Attachment) -> FakturaZalacznik: ...
+
+
+@overload
+def to_spec(request: DataBlock) -> FakturaZalacznikBlokDanych: ...
+
+
+@overload
+def to_spec(request: AttachmentTable) -> FakturaZalacznikBlokDanychTabela: ...
+
+
+@overload
+def to_spec(request: BaseModel) -> object: ...
+
+
+def to_spec(request: BaseModel) -> object:
+    """Convert an attachment domain model into the FA(3) attachment schema."""
+    return _to_spec(request)
+
+
+@singledispatch
+def _to_spec(request: BaseModel) -> object:
+    raise NotImplementedError(
+        f"No mapper registered for {type(request).__name__}. "
+        f"Register one with @_to_spec.register"
+    )
+
+
+@_to_spec.register
+def _(request: Attachment) -> FakturaZalacznik:
+    return FakturaZalacznik(
+        blok_danych=[to_spec(block) for block in request.data_blocks]
+    )
+
+
+@_to_spec.register
+def _(request: DataBlock) -> FakturaZalacznikBlokDanych:
+    return FakturaZalacznikBlokDanych(
+        znaglowek=request.header,
+        meta_dane=_to_spec_meta_data(request.meta_data),
+        tekst=FakturaZalacznikBlokDanychTekst(akapit=list(request.paragraphs))
+        if request.paragraphs
+        else None,
+        tabela=[to_spec(table) for table in request.tables] if request.tables else [],
+    )
+
+
+@_to_spec.register
+def _(request: AttachmentTable) -> FakturaZalacznikBlokDanychTabela:
+    return FakturaZalacznikBlokDanychTabela(
+        tmeta_dane=_to_spec_table_meta_data(request.meta_data),
+        opis=request.description,
+        tnaglowek=FakturaZalacznikBlokDanychTabelaTnaglowek(
+            kol=[
+                FakturaZalacznikBlokDanychTabelaTnaglowekKol(
+                    nkom=FakturaZalacznikBlokDanychTabelaTnaglowekKolNkom(
+                        value=_to_spec_column_name(index, request.columns_names)
+                    ),
+                    typ=_to_spec_column_type(column_type),
+                )
+                for index, column_type in enumerate(request.columns_format, start=1)
             ]
-        )
+        ),
+        wiersz=[
+            FakturaZalacznikBlokDanychTabelaWiersz(wkom=list(row))
+            for row in request.rows
+        ],
+        suma=FakturaZalacznikBlokDanychTabelaSuma(skom=list(request.summary))
+        if request.summary
+        else None,
+    )
 
-    @staticmethod
-    def map_data_block(schema: FakturaZalacznikBlokDanych) -> DataBlock:
-        """Map FakturaZalacznikBlokDanych schema to DataBlock domain request.
 
-        Args:
-            schema: The FakturaZalacznikBlokDanych schema request.
+def _from_spec_column_type(value: str) -> ValueType:
+    column_type_map: dict[str, ValueType] = {
+        "date": "date",
+        "datetime": "datetime",
+        "dec": "decimal",
+        "int": "integer",
+        "time": "time",
+        "txt": "txt",
+    }
+    return column_type_map[value]
 
-        Returns:
-            DataBlock domain request.
-        """
-        return DataBlock(
-            header=schema.znaglowek,
-            meta_data=[AttachmentMapper.map_meta_data(md) for md in schema.meta_dane]
-            if schema.meta_dane
-            else None,
-            text=AttachmentMapper.map_text(schema.tekst) if schema.tekst else None,
-            tables=[AttachmentMapper.map_table(table) for table in schema.tabela]
-            if schema.tabela
-            else None,
-        )
 
-    @staticmethod
-    def map_meta_data(schema: FakturaZalacznikBlokDanychMetaDane) -> AttachmentMetaData:
-        """Map FakturaZalacznikBlokDanychMetaDane to AttachmentMetaData.
+def _from_spec_meta_data(
+    meta_data: Sequence[FakturaZalacznikBlokDanychMetaDane],
+) -> list[dict[str, str]]:
+    return [{entry.zklucz: entry.zwartosc} for entry in meta_data]
 
-        Args:
-            schema: The metadata schema request.
 
-        Returns:
-            AttachmentMetaData domain request.
-        """
-        return AttachmentMetaData(
-            key=schema.zklucz,
-            value=schema.zwartosc,
-        )
+def _from_spec_table_meta_data(
+    meta_data: Sequence[FakturaZalacznikBlokDanychTabelaTmetaDane],
+) -> list[dict[str, str]]:
+    return [{entry.tklucz: entry.twartosc} for entry in meta_data]
 
-    @staticmethod
-    def map_text(schema: FakturaZalacznikBlokDanychTekst) -> AttachmentText:
-        """Map FakturaZalacznikBlokDanychTekst to AttachmentText.
 
-        Args:
-            schema: The text schema request.
+@overload
+def from_spec(schema: FakturaZalacznik) -> Attachment: ...
 
-        Returns:
-            AttachmentText domain request.
-        """
-        return AttachmentText(
-            paragraphs=list(schema.akapit),
-        )
 
-    @staticmethod
-    def map_table(schema: FakturaZalacznikBlokDanychTabela) -> AttachmentTable:
-        """Map FakturaZalacznikBlokDanychTabela to AttachmentTable.
+@overload
+def from_spec(schema: FakturaZalacznikBlokDanych) -> DataBlock: ...
 
-        Args:
-            schema: The table schema request.
 
-        Returns:
-            AttachmentTable domain request.
-        """
-        return AttachmentTable(
-            meta_data=[
-                AttachmentMapper.map_table_meta_data(md) for md in schema.tmeta_dane
-            ]
-            if schema.tmeta_dane
-            else None,
-            description=schema.opis,
-            header=AttachmentMapper.map_table_header(schema.tnaglowek),
-            rows=[AttachmentMapper.map_table_row(row) for row in schema.wiersz],
-            summary=AttachmentMapper.map_table_sum(schema.suma)
-            if schema.suma
-            else None,
-        )
+@overload
+def from_spec(schema: FakturaZalacznikBlokDanychTabela) -> AttachmentTable: ...
 
-    @staticmethod
-    def map_table_meta_data(
-        schema: FakturaZalacznikBlokDanychTabelaTmetaDane,
-    ) -> TableMetaData:
-        """Map FakturaZalacznikBlokDanychTabelaTmetaDane to TableMetaData.
 
-        Args:
-            schema: The table metadata schema request.
+@overload
+def from_spec(schema: object) -> object: ...
 
-        Returns:
-            TableMetaData domain request.
-        """
-        return TableMetaData(
-            key=schema.tklucz,
-            value=schema.twartosc,
-        )
 
-    @staticmethod
-    def map_table_header(
-        schema: FakturaZalacznikBlokDanychTabelaTnaglowek,
-    ) -> TableHeader:
-        """Map FakturaZalacznikBlokDanychTabelaTnaglowek to TableHeader.
+def from_spec(schema: object) -> object:
+    """Convert an FA(3) attachment schema model into the domain model."""
+    return _from_spec(schema)
 
-        Args:
-            schema: The table header schema request.
 
-        Returns:
-            TableHeader domain request.
-        """
-        return TableHeader(
-            columns=[
-                AttachmentMapper.map_table_header_column(col) for col in schema.kol
-            ],
-        )
+@singledispatch
+def _from_spec(schema: object) -> object:
+    raise NotImplementedError(
+        f"No mapper registered for {type(schema).__name__}. "
+        f"Register one with @_from_spec.register"
+    )
 
-    @staticmethod
-    def map_table_header_column(
-        schema: FakturaZalacznikBlokDanychTabelaTnaglowekKol,
-    ) -> TableHeaderColumn:
-        """Map FakturaZalacznikBlokDanychTabelaTnaglowekKol to TableHeaderColumn.
 
-        Args:
-            schema: The table header column schema request.
+@_from_spec.register
+def _(schema: FakturaZalacznik) -> Attachment:
+    return Attachment(data_blocks=[from_spec(block) for block in schema.blok_danych])
 
-        Returns:
-            TableHeaderColumn domain request.
-        """
-        return TableHeaderColumn(
-            name=schema.nkom.value,
-            type=TableColumnType(schema.typ.value),
-        )
 
-    @staticmethod
-    def map_table_row(schema: FakturaZalacznikBlokDanychTabelaWiersz) -> TableRow:
-        """Map FakturaZalacznikBlokDanychTabelaWiersz to TableRow.
+@_from_spec.register
+def _(schema: FakturaZalacznikBlokDanych) -> DataBlock:
+    return DataBlock(
+        header=schema.znaglowek,
+        meta_data=_from_spec_meta_data(schema.meta_dane) if schema.meta_dane else None,
+        paragraphs=list(schema.tekst.akapit) if schema.tekst else None,
+        tables=[from_spec(table) for table in schema.tabela] if schema.tabela else None,
+    )
 
-        Args:
-            schema: The table row schema request.
 
-        Returns:
-            TableRow domain request.
-        """
-        return TableRow(
-            cells=list(schema.wkom),
-        )
-
-    @staticmethod
-    def map_table_sum(schema: FakturaZalacznikBlokDanychTabelaSuma) -> TableSum:
-        """Map FakturaZalacznikBlokDanychTabelaSuma to TableSum.
-
-        Args:
-            schema: The table sum/footer schema request.
-
-        Returns:
-            TableSum domain request.
-        """
-        return TableSum(
-            cells=list(schema.skom),
-        )
+@_from_spec.register
+def _(schema: FakturaZalacznikBlokDanychTabela) -> AttachmentTable:
+    return AttachmentTable(
+        meta_data=_from_spec_table_meta_data(schema.tmeta_dane)
+        if schema.tmeta_dane
+        else [],
+        description=schema.opis,
+        columns_names=[column.nkom.value for column in schema.tnaglowek.kol],
+        columns_format=[
+            _from_spec_column_type(column.typ.value) for column in schema.tnaglowek.kol
+        ],
+        rows=[list(row.wkom) for row in schema.wiersz],
+        summary=list(schema.suma.skom) if schema.suma else None,
+    )

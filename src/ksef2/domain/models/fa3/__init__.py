@@ -1,33 +1,36 @@
 from ksef2.domain.models.fa3.attachment import (
     Attachment,
-    AttachmentMetaData,
     AttachmentTable,
-    AttachmentText,
     DataBlock,
-    TableColumnType,
-    TableHeader,
-    TableHeaderColumn,
-    TableMetaData,
-    TableRow,
-    TableSum,
 )
 from ksef2.domain.models.fa3.invoice import (
     ContactInfo,
     InvoiceAddress,
     InvoiceDetails,
     InvoiceEntity,
-    InvoiceHeader,
     KsefInvoice,
 )
 from ksef2.domain.models.fa3.body import InvoiceLine, KsefInvoiceBody
+from ksef2.domain.models.fa3.header import InvoiceHeader
+from ksef2.domain.models.fa3.drafts import (
+    AdvanceInvoiceReference,
+    AdvanceOrderLine,
+    CorrectedInvoiceReference,
+    DraftIntent,
+    MarginProcedure,
+    SettlementCharge,
+    SettlementDeduction,
+)
 
 __all__ = [
     "Attachment",
-    "AttachmentMetaData",
+    "AdvanceInvoiceReference",
+    "AdvanceOrderLine",
     "AttachmentTable",
-    "AttachmentText",
     "ContactInfo",
+    "CorrectedInvoiceReference",
     "DataBlock",
+    "DraftIntent",
     "InvoiceAddress",
     "InvoiceDetails",
     "InvoiceEntity",
@@ -35,10 +38,7 @@ __all__ = [
     "InvoiceHeader",
     "KsefInvoiceBody",
     "KsefInvoice",
-    "TableColumnType",
-    "TableHeader",
-    "TableHeaderColumn",
-    "TableMetaData",
-    "TableRow",
-    "TableSum",
+    "MarginProcedure",
+    "SettlementCharge",
+    "SettlementDeduction",
 ]

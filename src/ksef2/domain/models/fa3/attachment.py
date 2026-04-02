@@ -20,13 +20,15 @@ class AttachmentTable(KSeFBaseModel):
     Maps:
     meta_data - tmeta_dane List(FakturaZalacznikBlokDanychTabelaTmetaDane)
     description - opis (str)
-    columns_format - tnaglowek (FakturaZalacznikBlokDanychTabelaTnaglowek)
+    columns_names - tnaglowek/kol/nkom (list[str])
+    columns_format - tnaglowek/kol/typ (list[ValueType])
     rows - wiersz (FakturaZalacznikBlokDanychTabelaWiersz)
     summary - suma (FakturaZalacznikBlokDanychTabelaSuma)
     """
 
     meta_data: list[dict[str, str]] = Field(default_factory=list)
     description: str | None = None
+    columns_names: list[str] | None = None
     columns_format: list[ValueType] = Field(default_factory=list)
     rows: list[list[str]] = Field(
         min_length=1,
@@ -37,9 +39,13 @@ class AttachmentTable(KSeFBaseModel):
 
     @model_validator(mode="after")
     def validate_rows_and_columns(self) -> Self:
-
         if len(self.columns_format) != len(self.rows[0]):
             raise ValueError("Column count does not match row count")
+
+        if self.columns_names is not None and len(self.columns_names) != len(
+            self.columns_format
+        ):
+            raise ValueError("Column names count does not match column format count")
 
         def _validate_cell(value: str, row_idx: int, col_idx: int) -> None:
             match self.columns_format[col_idx]:
