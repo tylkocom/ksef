@@ -10,7 +10,11 @@ from ksef2.domain.models.fa3.invoice import (
     InvoiceEntity,
     KsefInvoice,
 )
-from ksef2.domain.models.fa3.body import InvoiceLine, KsefInvoiceBody
+from ksef2.domain.models.fa3.body import (
+    InvoiceLine,
+    KsefInvoiceBody,
+    TransactionConditions,
+)
 from ksef2.domain.models.fa3.header import InvoiceHeader
 from ksef2.domain.models.fa3.drafts import (
     AdvanceInvoiceReference,
@@ -41,4 +45,5 @@ __all__ = [
     "MarginProcedure",
     "SettlementCharge",
     "SettlementDeduction",
+    "TransactionConditions",
 ]

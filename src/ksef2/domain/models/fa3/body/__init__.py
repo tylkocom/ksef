@@ -8,6 +8,16 @@ from ksef2.domain.models.fa3.body.payment import (
     PaymentTerm,
     PaymentTermDescription,
 )
+from ksef2.domain.models.fa3.body.transaction import (
+    CargoType,
+    TransactionAddress,
+    TransactionConditions,
+    TransactionContract,
+    TransactionIdentity,
+    TransactionOrder,
+    TransactionTransport,
+    TransportType,
+)
 from ksef2.domain.models.fa3.body.root import (
     GtuCode,
     InvoiceLine,
@@ -35,5 +45,13 @@ __all__ = [
     "PaymentTerm",
     "PaymentTermDescription",
     "SaleCategory",
+    "CargoType",
+    "TransactionAddress",
+    "TransactionConditions",
+    "TransactionContract",
+    "TransactionIdentity",
+    "TransactionOrder",
+    "TransactionTransport",
+    "TransportType",
     "VatRate",
 ]

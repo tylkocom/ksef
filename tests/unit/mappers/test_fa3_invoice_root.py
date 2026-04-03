@@ -10,6 +10,11 @@ from ksef2.domain.models.fa3 import (
     KsefInvoice,
 )
 from ksef2.domain.models.fa3.body.payment import InvoicePayment
+from ksef2.domain.models.fa3.body.transaction import (
+    TransactionAddress,
+    TransactionConditions,
+    TransactionTransport,
+)
 from ksef2.infra.mappers.invoices.fa3.invoice import to_spec as invoice_to_spec
 from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import (
     Twybor1,
@@ -83,6 +88,17 @@ def test_invoice_to_spec_assembles_root_faktura() -> None:
                     paid=True,
                     payment_form="bank_transfer",
                 ),
+                transaction_conditions=TransactionConditions(
+                    transports=[
+                        TransactionTransport(
+                            transport_type="road",
+                            shipping_from=TransactionAddress(
+                                country_code="PL",
+                                address_line_1="Marszalkowska 10/5",
+                            ),
+                        )
+                    ]
+                ),
             ),
         )
     )
@@ -116,6 +132,9 @@ def test_invoice_to_spec_assembles_root_faktura() -> None:
     assert output.fa.fa_wiersz[0].stan_przed == Twybor1.VALUE_1
     assert output.fa.platnosc is not None
     assert output.fa.platnosc.zaplacono == Twybor1.VALUE_1
+    assert output.fa.warunki_transakcji is not None
+    assert len(output.fa.warunki_transakcji.transport) == 1
+    assert output.fa.warunki_transakcji.transport[0].rodzaj_transportu.name == "VALUE_3"
     assert output.fa.adnotacje.p_16 == Twybor12.VALUE_2
     assert output.fa.adnotacje.p_17 == Twybor12.VALUE_2
     assert output.fa.adnotacje.p_18 == Twybor12.VALUE_2

@@ -7,6 +7,7 @@ from pydantic import Field, model_validator
 
 from ksef2.domain.models import KSeFBaseModel
 from ksef2.domain.models.fa3.body.payment import InvoicePayment
+from ksef2.domain.models.fa3.body.transaction import TransactionConditions
 from ksef2.domain.models.fa3.drafts import (
     AdvanceInvoiceReference,
     AdvanceOrderLine,
@@ -401,6 +402,10 @@ class KsefInvoiceBody(KSeFBaseModel):
     payment: InvoicePayment | None = Field(
         default=None,
         description="platnosc: Payment details for the invoice.",
+    )
+    transaction_conditions: TransactionConditions | None = Field(
+        default=None,
+        description="warunki_transakcji: Transaction conditions for the invoice.",
     )
     margin_procedure: MarginProcedure | None = Field(
         default=None,

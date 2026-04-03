@@ -16,6 +16,9 @@ from ksef2.infra.mappers.invoices.fa3.header import to_spec as header_to_spec
 from ksef2.infra.mappers.invoices.fa3.lines import to_spec as line_to_spec
 from ksef2.infra.mappers.invoices.fa3.payment import to_spec as payment_to_spec
 from ksef2.infra.mappers.invoices.fa3.seller import to_spec as seller_to_spec
+from ksef2.infra.mappers.invoices.fa3.transaction import (
+    to_spec as transaction_to_spec,
+)
 from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import (
     Twybor1,
     Twybor12,
@@ -287,6 +290,9 @@ def _(request: KsefInvoiceBody) -> FakturaFa:
         ],
         rozliczenie=_map_rozliczenie(request),
         platnosc=payment_to_spec(request.payment) if request.payment else None,
+        warunki_transakcji=transaction_to_spec(request.transaction_conditions)
+        if request.transaction_conditions
+        else None,
         zamowienie=zamowienie,
     )
 
