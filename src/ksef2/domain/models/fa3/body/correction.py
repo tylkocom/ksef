@@ -122,7 +122,7 @@ class CorrectedBuyerEntity(KSeFBaseModel):
         return self
 
 
-class InvoiceCorrectionContext(KSeFBaseModel):
+class CorrectionInvoiceContext(KSeFBaseModel):
     """FA(3) correction-specific body data.
 
     References:

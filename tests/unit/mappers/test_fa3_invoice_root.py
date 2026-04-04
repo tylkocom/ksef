@@ -2,7 +2,6 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from ksef2.domain.models.fa3 import (
-    AdditionalDescriptionEntry,
     CorrectedBuyerEntity,
     CorrectedSellerEntity,
     InvoiceAddress,
@@ -14,13 +13,14 @@ from ksef2.domain.models.fa3 import (
     KsefInvoice,
 )
 from ksef2.domain.models.fa3.body import (
-    InvoiceAdvanceContext,
+    AdvancePaymentInvoiceContext,
     InvoiceRow,
     PartialAdvancePayment,
     NewTransportMeansItem,
     NewTransportSupply,
+    AdditionalDescriptionEntry,
 )
-from ksef2.domain.models.fa3.body import InvoiceCorrectionContext
+from ksef2.domain.models.fa3.body import CorrectionInvoiceContext
 from ksef2.domain.models.fa3.body.payment import InvoicePayment
 from ksef2.domain.models.fa3.body.transaction import (
     TransactionAddress,
@@ -195,7 +195,7 @@ def test_invoice_to_spec_maps_correction_party_blocks() -> None:
                 issue_date=date(2026, 3, 29),
                 invoice_number="FK/1/2026",
                 invoice_type="Faktura korygująca",
-                correction=InvoiceCorrectionContext(
+                correction=CorrectionInvoiceContext(
                     correction_reason="Buyer data correction",
                     correction_effect_type="other_date",
                     corrected_invoice_period="March 2026",
@@ -383,7 +383,7 @@ def test_invoice_to_spec_maps_advance_before_correction_and_partial_payments() -
                 issue_date=date(2026, 3, 29),
                 invoice_number="FKZ/1/2026",
                 invoice_type="Faktura korygująca fakturę dokumentującą otrzymanie zapłaty lub jej części przed dokonaniem czynności oraz fakturę wystawioną w związku z art. 106f ust. 4 ustawy (faktura korygująca fakturę zaliczkową)",
-                advance=InvoiceAdvanceContext(
+                advance=AdvancePaymentInvoiceContext(
                     amount_before_correction=Decimal("1200.50"),
                     currency_exchange_rate_before_correction=Decimal("4.450001"),
                     advance_partial_payments=[

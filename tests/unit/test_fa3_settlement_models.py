@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 from ksef2.domain.models.fa3 import AdvanceInvoiceReference
 from ksef2.domain.models.fa3.body import (
-    InvoiceAdvanceContext,
+    AdvancePaymentInvoiceContext,
     InvoiceRow,
     InvoiceSettlement,
     KsefInvoiceBody,
@@ -66,7 +66,7 @@ def test_invoice_body_combines_settlement_and_advance_reference_deductions() -> 
                 )
             ],
         ),
-        advance=InvoiceAdvanceContext(
+        advance=AdvancePaymentInvoiceContext(
             advance_invoice_references=[
                 AdvanceInvoiceReference(
                     ksef_id="1234567890-20260301-ABCDEF-ABCDEF-FF",

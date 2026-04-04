@@ -26,9 +26,9 @@ from ksef2.domain.models.fa3 import (
 )
 from ksef2.domain.models.fa3.body import (
     GtuCode,
-    InvoiceAdvanceContext,
+    AdvancePaymentInvoiceContext,
     InvoiceAnnotationsContext,
-    InvoiceCorrectionContext,
+    CorrectionInvoiceContext,
     InvoiceProcedure,
     InvoiceType,
     SaleCategory,
@@ -464,7 +464,7 @@ class CorrectionInvoiceBuilder(LineInvoiceBuilder):
 
     def _body_extras(self) -> dict[str, object]:
         return {
-            "correction": InvoiceCorrectionContext(
+            "correction": CorrectionInvoiceContext(
                 corrected_invoices=self._corrected_invoices,
                 correction_reason=self._correction_reason,
             ),
@@ -594,7 +594,7 @@ class SettlementInvoiceBuilder(LineInvoiceBuilder):
 
     def _body_extras(self) -> dict[str, object]:
         return {
-            "advance": InvoiceAdvanceContext(
+            "advance": AdvancePaymentInvoiceContext(
                 advance_invoice_references=self._advance_invoice_references,
             ),
             "settlement": InvoiceSettlement(

@@ -1,6 +1,6 @@
 from ksef2.domain.models.fa3.body.advance_payment import (
     AdvancePayment,
-    InvoiceAdvanceContext,
+    AdvancePaymentInvoiceContext,
     PartialAdvancePayment,
 )
 from ksef2.domain.models.fa3.body.annotations import (
@@ -12,7 +12,7 @@ from ksef2.domain.models.fa3.body.annotations import (
 from ksef2.domain.models.fa3.body.correction import (
     CorrectedBuyerEntity,
     CorrectedSellerEntity,
-    InvoiceCorrectionContext,
+    CorrectionInvoiceContext,
 )
 from ksef2.domain.models.fa3.body.payment import (
     BankAccount,
@@ -45,10 +45,10 @@ from ksef2.domain.models.fa3.body.transaction import (
     TransportType,
 )
 from ksef2.domain.models.fa3.body.root import (
-    AdditionalDescriptionEntry,
     InvoiceType,
     KsefInvoiceBody,
 )
+from ksef2.domain.models.fa3.body.description import AdditionalDescriptionEntry
 from ksef2.domain.models.fa3.body.row import (
     Money,
     GtuCode,
@@ -62,9 +62,9 @@ __all__ = [
     "BankAccount",
     "BankOwnAccountType",
     "AdvancePayment",
-    "InvoiceAdvanceContext",
+    "AdvancePaymentInvoiceContext",
     "InvoiceAnnotationsContext",
-    "InvoiceCorrectionContext",
+    "CorrectionInvoiceContext",
     "PartialAdvancePayment",
     "CorrectedBuyerEntity",
     "CorrectedSellerEntity",

@@ -93,7 +93,7 @@ class AdvancePayment(KSeFBaseModel):
         return self
 
 
-class InvoiceAdvanceContext(KSeFBaseModel):
+class AdvancePaymentInvoiceContext(KSeFBaseModel):
     """FA(3) advance-invoice-specific body data.
 
     References:

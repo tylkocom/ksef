@@ -7,8 +7,8 @@ from ksef2.domain.models.fa3 import (
     InvoiceAddress,
 )
 from ksef2.domain.models.fa3.body import (
-    InvoiceAdvanceContext,
-    InvoiceCorrectionContext,
+    AdvancePaymentInvoiceContext,
+    CorrectionInvoiceContext,
     InvoiceType,
     KsefInvoiceBody,
     InvoiceRow,
@@ -61,7 +61,7 @@ def test_invoice_body_rejects_correction_parties_on_non_correcting_invoice() -> 
             issue_date="2026-03-29",
             invoice_number="FV/1/2026",
             rows=[make_invoice_line()],
-            correction=InvoiceCorrectionContext(
+            correction=CorrectionInvoiceContext(
                 corrected_seller=CorrectedSellerEntity(
                     tax_id="1234567890",
                     name="Old Seller Sp. z o.o.",
@@ -77,7 +77,7 @@ def test_invoice_body_rejects_correction_context_on_non_correcting_invoice() -> 
             issue_date="2026-03-29",
             invoice_number="FV/1/2026",
             rows=[make_invoice_line()],
-            correction=InvoiceCorrectionContext(
+            correction=CorrectionInvoiceContext(
                 correction_reason="Should not be here",
             ),
         )
@@ -89,7 +89,7 @@ def test_invoice_body_accepts_correction_parties_on_correcting_invoice() -> None
         invoice_number="FK/1/2026",
         invoice_type=InvoiceType.CORRECTING,
         rows=[make_invoice_line()],
-        correction=InvoiceCorrectionContext(
+        correction=CorrectionInvoiceContext(
             correction_effect_type="correction_issue_date",
             corrected_invoice_period="2026-03",
             corrected_invoice_number_override="FV/1/2026/CORR",
@@ -124,7 +124,7 @@ def test_invoice_body_accepts_advance_context() -> None:
         invoice_number="FR/1/2026",
         invoice_type="Faktura wystawiona w związku z art. 106f ust. 3 ustawy",
         rows=[make_invoice_line()],
-        advance=InvoiceAdvanceContext(
+        advance=AdvancePaymentInvoiceContext(
             amount_before_correction="1500.45",
             currency_exchange_rate_before_correction="4.501234",
             advance_invoice_references=[
@@ -149,7 +149,7 @@ def test_invoice_body_rejects_advance_context_on_standard_invoice() -> None:
             issue_date="2026-03-29",
             invoice_number="FV/1/2026",
             rows=[make_invoice_line()],
-            advance=InvoiceAdvanceContext(
+            advance=AdvancePaymentInvoiceContext(
                 amount_before_correction="1500.45",
             ),
         )
