@@ -42,10 +42,12 @@ from ksef2.infra.schema.fa3.models.schemat import (
     FakturaFaRozliczenie,
     FakturaFaRozliczenieObciazenia,
     FakturaFaRozliczenieOdliczenia,
+    FakturaFaZaliczkaCzesciowa,
     FakturaFaZamowienie,
     TkodWaluty,
     TkluczWartosc,
     TrodzajFaktury,
+    TtypKorekty,
 )
 
 
@@ -209,6 +211,16 @@ def _map_advance_invoice_reference(
     )
 
 
+def _map_correction_effect_type(value: str | None) -> TtypKorekty | None:
+    if value is None:
+        return None
+    if value == "original_entry_date":
+        return TtypKorekty.VALUE_1
+    if value == "correction_issue_date":
+        return TtypKorekty.VALUE_2
+    return TtypKorekty.VALUE_3
+
+
 def _map_rozliczenie(request: KsefInvoiceBody) -> FakturaFaRozliczenie | None:
     settlement = request.settlement
     advance = request.advance
@@ -347,6 +359,16 @@ def _(request: KsefInvoiceBody) -> FakturaFa:
         correction_party_to_spec(buyer)
         for buyer in (correction.corrected_buyers if correction else [])
     ]
+    partial_advance_payments = [
+        FakturaFaZaliczkaCzesciowa(
+            p_6_z=payment.payment_date.isoformat(),
+            p_15_z=_format_decimal(payment.amount),
+            kurs_waluty_zw=_format_decimal(payment.currency_exchange_rate)
+            if payment.currency_exchange_rate is not None
+            else None,
+        )
+        for payment in (advance.advance_partial_payments if advance else [])
+    ]
 
     return FakturaFa(
         kod_waluty=_map_currency(request.currency),
@@ -387,6 +409,9 @@ def _(request: KsefInvoiceBody) -> FakturaFa:
         adnotacje=_map_adnotacje(annotations),
         rodzaj_faktury=map_invoice_type(request.invoice_type),
         przyczyna_korekty=correction.correction_reason if correction else None,
+        typ_korekty=_map_correction_effect_type(
+            correction.correction_effect_type if correction else None
+        ),
         dane_fa_korygowanej=[
             _map_corrected_invoice_reference(
                 issue_date=reference.issue_date.isoformat(),
@@ -396,8 +421,21 @@ def _(request: KsefInvoiceBody) -> FakturaFa:
             )
             for reference in (correction.corrected_invoices if correction else [])
         ],
+        okres_fa_korygowanej=(
+            correction.corrected_invoice_period if correction else None
+        ),
+        nr_fa_korygowany=(
+            correction.corrected_invoice_number_override if correction else None
+        ),
         podmiot1_k=corrected_seller,
         podmiot2_k=corrected_buyers,
+        p_15_zk=_format_decimal(advance.amount_before_correction)
+        if advance and advance.amount_before_correction is not None
+        else None,
+        kurs_waluty_zk=_format_decimal(advance.currency_exchange_rate_before_correction)
+        if advance and advance.currency_exchange_rate_before_correction is not None
+        else None,
+        zaliczka_czesciowa=partial_advance_payments,
         fp=Twybor1.VALUE_1 if request.fp_invoice else None,
         tp=Twybor1.VALUE_1 if request.related_party_transaction else None,
         dodatkowy_opis=[

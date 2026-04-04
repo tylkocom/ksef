@@ -75,6 +75,7 @@ def _(request: InvoiceEntity) -> FakturaPodmiot2:
     kod_ue, nr_vat_ue = _split_eu_vat_id(request.eu_vat_id)
 
     return FakturaPodmiot2(
+        nr_eori=request.eori_number,
         dane_identyfikacyjne=Tpodmiot2(
             # Polish NIP used when the buyer has a domestic tax identifier.
             nip=request.tax_id,
@@ -91,10 +92,14 @@ def _(request: InvoiceEntity) -> FakturaPodmiot2:
         dane_kontaktowe=_map_contact_details(request.contact),
         # ERP/customer contract identifier exposed as the FA(3) buyer customer number.
         nr_klienta=request.customer_number,
-        # TODO: To support JST (Local Gov) and GV (VAT Groups), we must first implement
-        # a 'Podmiot3' (Third Party/Recipient) domain model.
-        # FA(3) flag value "2" means this invoice does not concern a JST sub-unit.
-        jst=FakturaPodmiot2Jst.VALUE_2,
-        # FA(3) flag value "2" means this invoice does not concern a VAT group member.
-        gv=FakturaPodmiot2Gv.VALUE_2,
+        jst=(
+            FakturaPodmiot2Jst.VALUE_1
+            if request.jst_subordinate_unit
+            else FakturaPodmiot2Jst.VALUE_2
+        ),
+        gv=(
+            FakturaPodmiot2Gv.VALUE_1
+            if request.vat_group_member
+            else FakturaPodmiot2Gv.VALUE_2
+        ),
     )

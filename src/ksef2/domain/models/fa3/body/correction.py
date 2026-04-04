@@ -1,10 +1,17 @@
 import re
+from typing import Literal
 
 from pydantic import Field, field_validator, model_validator
 
 from ksef2.domain.models import KSeFBaseModel
 from ksef2.domain.models.fa3.drafts import CorrectedInvoiceReference
 from ksef2.domain.models.fa3.party import InvoiceAddress
+
+CorrectionEffectType = Literal[
+    "original_entry_date",
+    "correction_issue_date",
+    "other_date",
+]
 
 
 class CorrectedSellerEntity(KSeFBaseModel):
@@ -123,7 +130,10 @@ class InvoiceCorrectionContext(KSeFBaseModel):
 
     Maps:
         correction_reason - przyczyna_korekty (str)
+        correction_effect_type - typ_korekty (CorrectionEffectType)
         corrected_invoices - dane_fa_korygowanej (list[CorrectedInvoiceReference])
+        corrected_invoice_period - okres_fa_korygowanej (str)
+        corrected_invoice_number_override - nr_fa_korygowany (str)
         corrected_seller - podmiot1_k (CorrectedSellerEntity)
         corrected_buyers - podmiot2_k (list[CorrectedBuyerEntity])
     """
@@ -132,13 +142,26 @@ class InvoiceCorrectionContext(KSeFBaseModel):
         default=None,
         description="przyczyna_korekty: Optional correction reason.",
     )
-    # TODO: implement TypKorekty.
+    correction_effect_type: CorrectionEffectType | None = Field(
+        default=None,
+        description="typ_korekty: VAT register impact timing for the correction.",
+    )
     corrected_invoices: list[CorrectedInvoiceReference] = Field(
         default_factory=list,
         description="dane_fa_korygowanej: References to corrected invoices.",
     )
-    # TODO: implement OkresFaKorygowanej.
-    # TODO: implement NrFaKorygowany.
+    corrected_invoice_period: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=256,
+        description="okres_fa_korygowanej: Period to which the discount/reduction applies.",
+    )
+    corrected_invoice_number_override: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=256,
+        description="nr_fa_korygowany: Correct invoice number replacing an incorrect one.",
+    )
     corrected_seller: CorrectedSellerEntity | None = Field(
         default=None,
         description="podmiot1_k: Seller data from the corrected invoice.",

@@ -120,3 +120,20 @@ def test_buyer_to_spec_maps_eu_vat_identifier() -> None:
     assert output.dane_identyfikacyjne.nip == "DE123456789"
     assert output.dane_identyfikacyjne.kod_ue == TkodyKrajowUe.DE
     assert output.dane_identyfikacyjne.nr_vat_ue == "123456789"
+
+
+def test_buyer_to_spec_maps_eori_and_jst_gv_flags() -> None:
+    output = buyer_to_spec(
+        InvoiceEntity(
+            tax_id="1234567890",
+            eori_number="PL123456789000000",
+            jst_subordinate_unit=True,
+            vat_group_member=True,
+            name="Buyer Sp. z o.o.",
+            address=make_polish_address(),
+        )
+    )
+
+    assert output.nr_eori == "PL123456789000000"
+    assert output.jst == FakturaPodmiot2Jst.VALUE_1
+    assert output.gv == FakturaPodmiot2Gv.VALUE_1

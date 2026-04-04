@@ -100,12 +100,20 @@ class InvoiceAdvanceContext(KSeFBaseModel):
         schemat.FakturaFa
 
     Maps:
+        amount_before_correction - p_15_zk (Decimal)
+        currency_exchange_rate_before_correction - kurs_waluty_zk (Decimal)
         advance_partial_payments - zaliczka_czesciowa (list[PartialAdvancePayment])
         advance_invoice_references - faktura_zaliczkowa (list[AdvanceInvoiceReference])
     """
 
-    # TODO: implement P_15ZK.
-    # TODO: implement KursWalutyZK.
+    amount_before_correction: Decimal | None = Field(
+        default=None,
+        description="p_15_zk: Advance amount or amount due before correction.",
+    )
+    currency_exchange_rate_before_correction: Decimal | None = Field(
+        default=None,
+        description="kurs_waluty_zk: Exchange rate used before correction.",
+    )
     advance_partial_payments: list[PartialAdvancePayment] = Field(
         default_factory=list,
         description="zaliczka_czesciowa: Partial advance payments.",
@@ -114,3 +122,17 @@ class InvoiceAdvanceContext(KSeFBaseModel):
         default_factory=list,
         description="faktura_zaliczkowa: Referenced advance invoices on settlements.",
     )
+
+    @field_validator("amount_before_correction")
+    @classmethod
+    def validate_amount_before_correction(cls, value: Decimal | None) -> Decimal | None:
+        if value is None:
+            return None
+        return round_pln(value)
+
+    @field_validator("currency_exchange_rate_before_correction")
+    @classmethod
+    def validate_rate_before_correction(cls, value: Decimal | None) -> Decimal | None:
+        if value is None:
+            return None
+        return round_rate(value)

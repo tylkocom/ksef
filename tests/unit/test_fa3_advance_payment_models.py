@@ -2,6 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from ksef2.domain.models.fa3 import AdvancePayment, PartialAdvancePayment
+from ksef2.domain.models.fa3.body import InvoiceAdvanceContext
 
 
 def test_partial_advance_payment_accepts_schema_shape() -> None:
@@ -56,3 +57,13 @@ def test_advance_payment_rejects_mixed_reference_modes() -> None:
             invoice_number="FZ/123/07/2025",
             ksef_id="1234567890-20260301-ABCDEF-ABCDEF-FF",
         )
+
+
+def test_invoice_advance_context_rounds_before_correction_values() -> None:
+    context = InvoiceAdvanceContext(
+        amount_before_correction="1200.456",
+        currency_exchange_rate_before_correction="4.4512349",
+    )
+
+    assert str(context.amount_before_correction) == "1200.46"
+    assert str(context.currency_exchange_rate_before_correction) == "4.451235"

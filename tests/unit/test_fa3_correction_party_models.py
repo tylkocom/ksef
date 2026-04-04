@@ -71,6 +71,18 @@ def test_invoice_body_rejects_correction_parties_on_non_correcting_invoice() -> 
         )
 
 
+def test_invoice_body_rejects_correction_context_on_non_correcting_invoice() -> None:
+    with pytest.raises(ValidationError, match="correction is only valid"):
+        KsefInvoiceBody(
+            issue_date="2026-03-29",
+            invoice_number="FV/1/2026",
+            rows=[make_invoice_line()],
+            correction=InvoiceCorrectionContext(
+                correction_reason="Should not be here",
+            ),
+        )
+
+
 def test_invoice_body_accepts_correction_parties_on_correcting_invoice() -> None:
     body = KsefInvoiceBody(
         issue_date="2026-03-29",
@@ -78,6 +90,9 @@ def test_invoice_body_accepts_correction_parties_on_correcting_invoice() -> None
         invoice_type=InvoiceType.CORRECTING,
         rows=[make_invoice_line()],
         correction=InvoiceCorrectionContext(
+            correction_effect_type="correction_issue_date",
+            corrected_invoice_period="2026-03",
+            corrected_invoice_number_override="FV/1/2026/CORR",
             corrected_invoices=[
                 {
                     "issue_date": "2026-03-01",
@@ -96,6 +111,9 @@ def test_invoice_body_accepts_correction_parties_on_correcting_invoice() -> None
     )
 
     assert body.correction is not None
+    assert body.correction.correction_effect_type == "correction_issue_date"
+    assert body.correction.corrected_invoice_period == "2026-03"
+    assert body.correction.corrected_invoice_number_override == "FV/1/2026/CORR"
     assert len(body.correction.corrected_buyers) == 1
     assert body.correction.corrected_buyers[0].eu_vat_id == "DE123456789"
 
@@ -107,15 +125,31 @@ def test_invoice_body_accepts_advance_context() -> None:
         invoice_type="Faktura wystawiona w związku z art. 106f ust. 3 ustawy",
         rows=[make_invoice_line()],
         advance=InvoiceAdvanceContext(
+            amount_before_correction="1500.45",
+            currency_exchange_rate_before_correction="4.501234",
             advance_invoice_references=[
                 {
                     "ksef_id": "1234567890-20260301-ABCDEF-ABCDEF-FF",
                     "deduction_amount": "500.00",
                     "deduction_reason": "Rozliczenie faktury zaliczkowej nr 1",
                 }
-            ]
+            ],
         ),
     )
 
     assert body.advance is not None
+    assert str(body.advance.amount_before_correction) == "1500.45"
+    assert str(body.advance.currency_exchange_rate_before_correction) == "4.501234"
     assert len(body.advance.advance_invoice_references) == 1
+
+
+def test_invoice_body_rejects_advance_context_on_standard_invoice() -> None:
+    with pytest.raises(ValidationError, match="advance is only valid"):
+        KsefInvoiceBody(
+            issue_date="2026-03-29",
+            invoice_number="FV/1/2026",
+            rows=[make_invoice_line()],
+            advance=InvoiceAdvanceContext(
+                amount_before_correction="1500.45",
+            ),
+        )

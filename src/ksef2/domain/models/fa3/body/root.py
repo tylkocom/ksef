@@ -224,6 +224,41 @@ class KsefInvoiceBody(KSeFBaseModel):
         advance_invoice_references = (
             advance.advance_invoice_references if advance else []
         )
+        has_correction_data = correction is not None and any(
+            [
+                correction.correction_reason is not None,
+                correction.correction_effect_type is not None,
+                bool(corrected_invoices),
+                correction.corrected_invoice_period is not None,
+                correction.corrected_invoice_number_override is not None,
+                corrected_seller is not None,
+                bool(corrected_buyers),
+            ]
+        )
+        has_advance_data = advance is not None and any(
+            [
+                advance.amount_before_correction is not None,
+                advance.currency_exchange_rate_before_correction is not None,
+                bool(advance.advance_partial_payments),
+                bool(advance_invoice_references),
+            ]
+        )
+
+        if has_correction_data and self.invoice_type not in {
+            InvoiceType.CORRECTING,
+            InvoiceType.CORRECTING_ZAL,
+            InvoiceType.CORRECTING_ROZ,
+        }:
+            raise ValueError("correction is only valid for correcting invoices")
+        if has_advance_data and self.invoice_type not in {
+            InvoiceType.ZAL,
+            InvoiceType.ROZ,
+            InvoiceType.CORRECTING_ZAL,
+            InvoiceType.CORRECTING_ROZ,
+        }:
+            raise ValueError(
+                "advance is only valid for advance and settlement invoices"
+            )
 
         if self.invoice_type == InvoiceType.CORRECTING and not corrected_invoices:
             raise ValueError("Correcting invoices require corrected_invoices data")

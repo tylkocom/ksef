@@ -14,7 +14,9 @@ from ksef2.domain.models.fa3 import (
     KsefInvoice,
 )
 from ksef2.domain.models.fa3.body import (
+    InvoiceAdvanceContext,
     InvoiceRow,
+    PartialAdvancePayment,
     NewTransportMeansItem,
     NewTransportSupply,
 )
@@ -195,6 +197,9 @@ def test_invoice_to_spec_maps_correction_party_blocks() -> None:
                 invoice_type="Faktura korygująca",
                 correction=InvoiceCorrectionContext(
                     correction_reason="Buyer data correction",
+                    correction_effect_type="other_date",
+                    corrected_invoice_period="March 2026",
+                    corrected_invoice_number_override="FV/1/2026/OK",
                     corrected_invoices=[
                         {
                             "issue_date": "2026-03-01",
@@ -231,6 +236,9 @@ def test_invoice_to_spec_maps_correction_party_blocks() -> None:
     )
 
     assert output.fa.podmiot1_k is not None
+    assert output.fa.typ_korekty.name == "VALUE_3"
+    assert output.fa.okres_fa_korygowanej == "March 2026"
+    assert output.fa.nr_fa_korygowany == "FV/1/2026/OK"
     assert output.fa.podmiot1_k.prefiks_podatnika.name == "DE"
     assert output.fa.podmiot1_k.dane_identyfikacyjne.nazwa == "Old Seller Sp. z o.o."
     assert len(output.fa.podmiot2_k) == 1
@@ -349,3 +357,60 @@ def test_invoice_to_spec_maps_foreign_currency_vat_and_annotations() -> None:
         output.fa.adnotacje.nowe_srodki_transportu.nowy_srodek_transportu[0].p_22_b1
         == "YV2RT40A1KA123456"
     )
+
+
+def test_invoice_to_spec_maps_advance_before_correction_and_partial_payments() -> None:
+    output = invoice_to_spec(
+        KsefInvoice(
+            invoice_header=InvoiceHeader(
+                generation_timestamp=datetime(2026, 2, 1, 12, 30, 45),
+                system_info="ACME ERP",
+            ),
+            seller=InvoiceEntity(
+                tax_id="1234567890",
+                name="Seller Sp. z o.o.",
+                address=make_polish_address(),
+            ),
+            buyer=InvoiceEntity(
+                name="Buyer GmbH",
+                address=InvoiceAddress(
+                    country_code="DE",
+                    address_line_1="Unter den Linden 1",
+                ),
+            ),
+            body=KsefInvoiceBody(
+                currency="EUR",
+                issue_date=date(2026, 3, 29),
+                invoice_number="FKZ/1/2026",
+                invoice_type="Faktura korygująca fakturę dokumentującą otrzymanie zapłaty lub jej części przed dokonaniem czynności oraz fakturę wystawioną w związku z art. 106f ust. 4 ustawy (faktura korygująca fakturę zaliczkową)",
+                advance=InvoiceAdvanceContext(
+                    amount_before_correction=Decimal("1200.50"),
+                    currency_exchange_rate_before_correction=Decimal("4.450001"),
+                    advance_partial_payments=[
+                        PartialAdvancePayment(
+                            payment_date=date(2026, 3, 1),
+                            amount=Decimal("500.00"),
+                            currency_exchange_rate=Decimal("4.400001"),
+                        )
+                    ],
+                ),
+                rows=[
+                    InvoiceRow(
+                        name="Consulting service",
+                        quantity=Decimal("1"),
+                        unit_price_net=Decimal("100.00"),
+                        net_amount=Decimal("100.00"),
+                        vat_rate="23",
+                        vat_amount=Decimal("23.00"),
+                    )
+                ],
+            ),
+        )
+    )
+
+    assert output.fa.p_15_zk == "1200.50"
+    assert output.fa.kurs_waluty_zk == "4.450001"
+    assert len(output.fa.zaliczka_czesciowa) == 1
+    assert output.fa.zaliczka_czesciowa[0].p_6_z == "2026-03-01"
+    assert output.fa.zaliczka_czesciowa[0].p_15_z == "500.00"
+    assert output.fa.zaliczka_czesciowa[0].kurs_waluty_zw == "4.400001"
