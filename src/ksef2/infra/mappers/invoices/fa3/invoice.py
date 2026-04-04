@@ -5,10 +5,12 @@ from functools import singledispatch
 from typing import overload, assert_never
 
 from pydantic import BaseModel
-from ksef2.domain.models.fa3.drafts import MarginProcedure
 from ksef2.domain.models.fa3.body import (
+    InvoiceAnnotationsContext,
+    InvoiceTaxExemption,
     KsefInvoiceBody,
     InvoiceType,
+    NewTransportSupply,
 )
 from ksef2.domain.models.fa3 import KsefInvoice
 from ksef2.infra.mappers.invoices.fa3.buyer import to_spec as buyer_to_spec
@@ -32,6 +34,7 @@ from ksef2.infra.schema.fa3.models.schemat import (
     FakturaFaOkresFa,
     FakturaFaAdnotacje,
     FakturaFaAdnotacjeNoweSrodkiTransportu,
+    FakturaFaAdnotacjeNoweSrodkiTransportuNowySrodekTransportu,
     FakturaFaAdnotacjePmarzy,
     FakturaFaAdnotacjeZwolnienie,
     FakturaFaDaneFaKorygowanej,
@@ -41,6 +44,7 @@ from ksef2.infra.schema.fa3.models.schemat import (
     FakturaFaRozliczenieOdliczenia,
     FakturaFaZamowienie,
     TkodWaluty,
+    TkluczWartosc,
     TrodzajFaktury,
 )
 
@@ -57,6 +61,12 @@ def _opt_dec(value: Decimal) -> str | None:
     return _format_decimal(value)
 
 
+def _opt_optional_dec(value: Decimal | None) -> str | None:
+    if value is None:
+        return None
+    return _opt_dec(value)
+
+
 def _map_currency(value: str) -> TkodWaluty:
     try:
         return TkodWaluty(value.upper())
@@ -65,22 +75,22 @@ def _map_currency(value: str) -> TkodWaluty:
 
 
 def _map_margin_adnotacje(
-    margin_procedure: MarginProcedure | None,
+    margin_procedure: str | None,
 ) -> FakturaFaAdnotacjePmarzy:
     if margin_procedure is None:
         return FakturaFaAdnotacjePmarzy(p_pmarzy_n=Twybor1.VALUE_1)
 
-    if margin_procedure == MarginProcedure.TRAVEL_AGENCY:
+    if margin_procedure == "travel_agency":
         return FakturaFaAdnotacjePmarzy(
             p_pmarzy=Twybor1.VALUE_1,
             p_pmarzy_2=Twybor1.VALUE_1,
         )
-    if margin_procedure == MarginProcedure.USED_GOODS:
+    if margin_procedure == "used_goods":
         return FakturaFaAdnotacjePmarzy(
             p_pmarzy=Twybor1.VALUE_1,
             p_pmarzy_3_1=Twybor1.VALUE_1,
         )
-    if margin_procedure == MarginProcedure.ARTWORKS:
+    if margin_procedure == "artworks":
         return FakturaFaAdnotacjePmarzy(
             p_pmarzy=Twybor1.VALUE_1,
             p_pmarzy_3_2=Twybor1.VALUE_1,
@@ -92,19 +102,88 @@ def _map_margin_adnotacje(
 
 
 def _map_adnotacje(
-    margin_procedure: MarginProcedure | None = None,
+    annotations: InvoiceAnnotationsContext | None,
 ) -> FakturaFaAdnotacje:
+    tax_exemption = annotations.tax_exemption if annotations else None
+    new_transport_supply = annotations.new_transport_supply if annotations else None
+    zwolnienie = _map_tax_exemption(tax_exemption)
+    nowe_srodki_transportu = _map_new_transport_supply(new_transport_supply)
+
     return FakturaFaAdnotacje(
-        p_16=Twybor12.VALUE_2,
-        p_17=Twybor12.VALUE_2,
-        p_18=Twybor12.VALUE_2,
-        p_18_a=Twybor12.VALUE_2,
-        zwolnienie=FakturaFaAdnotacjeZwolnienie(p_19_n=Twybor1.VALUE_1),
-        nowe_srodki_transportu=FakturaFaAdnotacjeNoweSrodkiTransportu(
-            p_22_n=Twybor1.VALUE_1
+        p_16=Twybor12.VALUE_1
+        if annotations and annotations.cash_accounting
+        else Twybor12.VALUE_2,
+        p_17=Twybor12.VALUE_1
+        if annotations and annotations.self_billing
+        else Twybor12.VALUE_2,
+        p_18=Twybor12.VALUE_1
+        if annotations and annotations.reverse_charge_annotation
+        else Twybor12.VALUE_2,
+        p_18_a=Twybor12.VALUE_1
+        if annotations and annotations.split_payment
+        else Twybor12.VALUE_2,
+        zwolnienie=zwolnienie,
+        nowe_srodki_transportu=nowe_srodki_transportu,
+        p_23=Twybor12.VALUE_1
+        if annotations and annotations.simplified_procedure
+        else Twybor12.VALUE_2,
+        pmarzy=_map_margin_adnotacje(
+            annotations.margin_procedure if annotations else None
         ),
-        p_23=Twybor12.VALUE_2,
-        pmarzy=_map_margin_adnotacje(margin_procedure),
+    )
+
+
+def _map_tax_exemption(
+    tax_exemption: InvoiceTaxExemption | None,
+) -> FakturaFaAdnotacjeZwolnienie:
+    if tax_exemption is None:
+        return FakturaFaAdnotacjeZwolnienie(p_19_n=Twybor1.VALUE_1)
+
+    return FakturaFaAdnotacjeZwolnienie(
+        p_19=Twybor1.VALUE_1,
+        p_19_a=tax_exemption.legal_basis_act,
+        p_19_b=tax_exemption.legal_basis_eu_directive,
+        p_19_c=tax_exemption.legal_basis_other,
+    )
+
+
+def _map_new_transport_supply(
+    new_transport_supply: NewTransportSupply | None,
+) -> FakturaFaAdnotacjeNoweSrodkiTransportu:
+    if new_transport_supply is None:
+        return FakturaFaAdnotacjeNoweSrodkiTransportu(p_22_n=Twybor1.VALUE_1)
+
+    items = [
+        FakturaFaAdnotacjeNoweSrodkiTransportuNowySrodekTransportu(
+            p_22_a=item.available_from.isoformat(),
+            p_nr_wiersza_nst=item.row_number,
+            p_22_bmk=item.brand,
+            p_22_bmd=item.model,
+            p_22_bk=item.color,
+            p_22_bnr=item.registration_number,
+            p_22_brp=item.production_year,
+            p_22_b=item.land_vehicle_mileage,
+            p_22_b1=item.vin,
+            p_22_b2=item.body_number,
+            p_22_b3=item.chassis_number,
+            p_22_b4=item.frame_number,
+            p_22_bt=item.land_vehicle_type,
+            p_22_c=item.vessel_working_hours,
+            p_22_c1=item.hull_number,
+            p_22_d=item.aircraft_working_hours,
+            p_22_d1=item.aircraft_serial_number,
+        )
+        for item in new_transport_supply.items
+    ]
+
+    return FakturaFaAdnotacjeNoweSrodkiTransportu(
+        p_22=Twybor1.VALUE_1,
+        p_42_5=Twybor12.VALUE_1
+        if new_transport_supply.article_42_5_required
+        else Twybor12.VALUE_2
+        if new_transport_supply.article_42_5_required is not None
+        else None,
+        nowy_srodek_transportu=items,
     )
 
 
@@ -132,6 +211,8 @@ def _map_advance_invoice_reference(
 
 def _map_rozliczenie(request: KsefInvoiceBody) -> FakturaFaRozliczenie | None:
     settlement = request.settlement
+    advance = request.advance
+
     charges = [
         FakturaFaRozliczenieObciazenia(
             kwota=_format_decimal(charge.amount),
@@ -151,7 +232,7 @@ def _map_rozliczenie(request: KsefInvoiceBody) -> FakturaFaRozliczenie | None:
             kwota=_format_decimal(reference.deduction_amount),
             powod=reference.deduction_reason,
         )
-        for reference in request.advance_invoice_references
+        for reference in (advance.advance_invoice_references if advance else [])
         if reference.deduction_amount is not None
         and reference.deduction_reason is not None
     )
@@ -237,6 +318,10 @@ def _to_spec(request: BaseModel) -> object:
 
 @_to_spec.register
 def _(request: KsefInvoiceBody) -> FakturaFa:
+    correction = request.correction
+    advance = request.advance
+    annotations = request.annotations
+
     faktura_fa_okres_fa = None
     if request.period_start and request.period_end:
         faktura_fa_okres_fa = FakturaFaOkresFa(
@@ -255,11 +340,12 @@ def _(request: KsefInvoiceBody) -> FakturaFa:
         )
 
     corrected_seller = None
-    if request.corrected_seller is not None:
-        corrected_seller = correction_party_to_spec(request.corrected_seller)
+    if correction and correction.corrected_seller is not None:
+        corrected_seller = correction_party_to_spec(correction.corrected_seller)
 
     corrected_buyers = [
-        correction_party_to_spec(buyer) for buyer in request.corrected_buyers
+        correction_party_to_spec(buyer)
+        for buyer in (correction.corrected_buyers if correction else [])
     ]
 
     return FakturaFa(
@@ -273,12 +359,16 @@ def _(request: KsefInvoiceBody) -> FakturaFa:
         # Mapped strictly to the SaleCategory tax buckets using _opt_dec to omit empty buckets
         p_13_1=_opt_dec(request.base_rate_net_total),
         p_14_1=_opt_dec(request.base_rate_vat_total),
+        p_14_1_w=_opt_optional_dec(request.base_rate_vat_total_pln),
         p_13_2=_opt_dec(request.first_reduced_rate_net_total),
         p_14_2=_opt_dec(request.first_reduced_rate_vat_total),
+        p_14_2_w=_opt_optional_dec(request.first_reduced_rate_vat_total_pln),
         p_13_3=_opt_dec(request.second_reduced_rate_net_total),
         p_14_3=_opt_dec(request.second_reduced_rate_vat_total),
+        p_14_3_w=_opt_optional_dec(request.second_reduced_rate_vat_total_pln),
         p_13_4=_opt_dec(request.taxi_flat_rate_net_total),
         p_14_4=_opt_dec(request.taxi_flat_rate_vat_total),
+        p_14_4_w=_opt_optional_dec(request.taxi_flat_rate_vat_total_pln),
         p_13_5=_opt_dec(request.special_procedure_xii_net_total),
         p_14_5=_opt_dec(request.special_procedure_xii_vat_total),
         p_13_6_1=_opt_dec(request.zero_rate_domestic_total),
@@ -291,11 +381,12 @@ def _(request: KsefInvoiceBody) -> FakturaFa:
         p_13_11=_opt_dec(request.margin_total),
         # Total Gross is mandatory, always format to string even if 0.00
         p_15=_format_decimal(request.total_gross),
-        # TODO: Implement p_14_1_w etc. when foreign currency to PLN conversion is added to the domain model
-        kurs_waluty_z=None,
-        adnotacje=_map_adnotacje(request.margin_procedure),
+        kurs_waluty_z=_format_decimal(request.vat_currency_exchange_rate)
+        if request.vat_currency_exchange_rate is not None
+        else None,
+        adnotacje=_map_adnotacje(annotations),
         rodzaj_faktury=map_invoice_type(request.invoice_type),
-        przyczyna_korekty=request.correction_reason,
+        przyczyna_korekty=correction.correction_reason if correction else None,
         dane_fa_korygowanej=[
             _map_corrected_invoice_reference(
                 issue_date=reference.issue_date.isoformat(),
@@ -303,17 +394,27 @@ def _(request: KsefInvoiceBody) -> FakturaFa:
                 ksef_id=reference.ksef_id,
                 outside_ksef=reference.outside_ksef,
             )
-            for reference in request.corrected_invoices
+            for reference in (correction.corrected_invoices if correction else [])
         ],
         podmiot1_k=corrected_seller,
         podmiot2_k=corrected_buyers,
+        fp=Twybor1.VALUE_1 if request.fp_invoice else None,
+        tp=Twybor1.VALUE_1 if request.related_party_transaction else None,
+        dodatkowy_opis=[
+            TkluczWartosc(
+                nr_wiersza=entry.row_number,
+                klucz=entry.key,
+                wartosc=entry.value,
+            )
+            for entry in request.additional_description
+        ],
         faktura_zaliczkowa=[
             _map_advance_invoice_reference(
                 ksef_id=reference.ksef_id,
                 invoice_number=reference.invoice_number,
                 outside_ksef=reference.outside_ksef,
             )
-            for reference in request.advance_invoice_references
+            for reference in (advance.advance_invoice_references if advance else [])
         ],
         # Finally, build the actual invoice lines
         fa_wiersz=[

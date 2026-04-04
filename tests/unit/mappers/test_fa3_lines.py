@@ -1,20 +1,23 @@
 from datetime import date
 from decimal import Decimal
 
-from ksef2.domain.models.fa3 import InvoiceLine
+from ksef2.domain.models.fa3 import AdvanceOrderLine
+from ksef2.domain.models.fa3.body import SaleCategory, InvoiceRow
 from ksef2.infra.mappers.invoices.fa3.lines import to_spec as lines_to_spec
 from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import Twybor1
 from ksef2.infra.schema.fa3.models.schemat import (
     FakturaFaFaWiersz,
+    FakturaFaZamowienieZamowienieWiersz,
     Tgtu,
     ToznaczenieProcedury,
+    ToznaczenieProceduryZ,
     TstawkaPodatku,
 )
 
 
 def test_lines_to_spec_maps_complete_invoice_line() -> None:
     output = lines_to_spec(
-        InvoiceLine(
+        InvoiceRow(
             name="Laptop",
             quantity=Decimal("2"),
             unit_price_net=Decimal("3500.12345678"),
@@ -72,12 +75,13 @@ def test_lines_to_spec_maps_complete_invoice_line() -> None:
 
 def test_lines_to_spec_maps_optional_fields_to_none() -> None:
     output = lines_to_spec(
-        InvoiceLine(
+        InvoiceRow(
             name="Consulting service",
             quantity=Decimal("10"),
             unit_price_net=Decimal("100.00"),
             net_amount=Decimal("1000.00"),
             vat_rate="zw",
+            sale_category=SaleCategory.EXEMPT,
             vat_amount=Decimal("0.00"),
         ),
         row_number=1,
@@ -98,3 +102,44 @@ def test_lines_to_spec_maps_optional_fields_to_none() -> None:
     assert output.procedura is None
     assert output.p_12_zal_15 is None
     assert output.stan_przed is None
+
+
+def test_lines_to_spec_maps_zero_wdt_bucket_to_brochure_specific_value() -> None:
+    output = lines_to_spec(
+        InvoiceRow(
+            name="WDT supply",
+            quantity=Decimal("1"),
+            unit_price_net=Decimal("500.00"),
+            net_amount=Decimal("500.00"),
+            vat_rate="0",
+            sale_category=SaleCategory.ZERO_WDT,
+            vat_amount=Decimal("0.00"),
+        ),
+        row_number=3,
+    )
+
+    assert output.p_12 == TstawkaPodatku.VALUE_0_WDT
+
+
+def test_lines_to_spec_maps_advance_order_line_to_zamowienie_row() -> None:
+    output = lines_to_spec(
+        AdvanceOrderLine(
+            name="Dom jednorodzinny",
+            quantity=Decimal("1"),
+            unit_of_measure="usl",
+            gross_amount=Decimal("1230.00"),
+            vat_rate="23",
+            procedure="TT_D",
+            annex_15_marker=True,
+        ),
+        row_number=1,
+    )
+
+    assert isinstance(output, FakturaFaZamowienieZamowienieWiersz)
+    assert output.nr_wiersza_zam == 1
+    assert output.p_7_z == "Dom jednorodzinny"
+    assert output.p_11_netto_z == "1000.00"
+    assert output.p_11_vat_z == "230.00"
+    assert output.p_12_z == TstawkaPodatku.VALUE_23
+    assert output.procedura_z == ToznaczenieProceduryZ.TT_D
+    assert output.p_12_z_zal_15 == Twybor1.VALUE_1

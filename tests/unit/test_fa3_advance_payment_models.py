@@ -1,0 +1,58 @@
+import pytest
+from pydantic import ValidationError
+
+from ksef2.domain.models.fa3 import AdvancePayment, PartialAdvancePayment
+
+
+def test_partial_advance_payment_accepts_schema_shape() -> None:
+    payment = PartialAdvancePayment(
+        payment_date="2026-09-10",
+        amount="500",
+        currency_exchange_rate="4.4512",
+    )
+
+    assert str(payment.payment_date) == "2026-09-10"
+    assert str(payment.amount) == "500.00"
+    assert str(payment.currency_exchange_rate) == "4.451200"
+
+
+def test_advance_payment_accepts_outside_ksef_reference() -> None:
+    payment = AdvancePayment(
+        outside_ksef=True,
+        invoice_number="FZ/123/07/2025",
+    )
+
+    assert payment.outside_ksef is True
+    assert payment.invoice_number == "FZ/123/07/2025"
+    assert payment.ksef_id is None
+
+
+def test_advance_payment_accepts_ksef_reference() -> None:
+    payment = AdvancePayment(
+        ksef_id="1234567890-20260301-ABCDEF-ABCDEF-FF",
+    )
+
+    assert payment.outside_ksef is False
+    assert payment.ksef_id == "1234567890-20260301-ABCDEF-ABCDEF-FF"
+    assert payment.invoice_number is None
+
+
+def test_advance_payment_rejects_mixed_reference_modes() -> None:
+    with pytest.raises(
+        ValidationError,
+        match="ksef_id cannot be combined with outside_ksef advance invoice references",
+    ):
+        AdvancePayment(
+            outside_ksef=True,
+            invoice_number="FZ/123/07/2025",
+            ksef_id="1234567890-20260301-ABCDEF-ABCDEF-FF",
+        )
+
+    with pytest.raises(
+        ValidationError,
+        match="invoice_number cannot be combined with in-KSeF advance invoice references",
+    ):
+        AdvancePayment(
+            invoice_number="FZ/123/07/2025",
+            ksef_id="1234567890-20260301-ABCDEF-ABCDEF-FF",
+        )

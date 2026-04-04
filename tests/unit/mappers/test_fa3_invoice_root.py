@@ -2,15 +2,23 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from ksef2.domain.models.fa3 import (
+    AdditionalDescriptionEntry,
     CorrectedBuyerEntity,
     CorrectedSellerEntity,
     InvoiceAddress,
+    InvoiceAnnotationsContext,
     InvoiceEntity,
     InvoiceHeader,
+    InvoiceTaxExemption,
     KsefInvoiceBody,
     KsefInvoice,
 )
-from ksef2.domain.models.fa3.body import InvoiceRow
+from ksef2.domain.models.fa3.body import (
+    InvoiceRow,
+    NewTransportMeansItem,
+    NewTransportSupply,
+)
+from ksef2.domain.models.fa3.body import InvoiceCorrectionContext
 from ksef2.domain.models.fa3.body.payment import InvoicePayment
 from ksef2.domain.models.fa3.body.transaction import (
     TransactionAddress,
@@ -90,6 +98,15 @@ def test_invoice_to_spec_assembles_root_faktura() -> None:
                     paid=True,
                     payment_form="bank_transfer",
                 ),
+                fp_invoice=True,
+                related_party_transaction=True,
+                additional_description=[
+                    AdditionalDescriptionEntry(
+                        row_number=2,
+                        key="ContractReference",
+                        value="A-2026-04",
+                    )
+                ],
                 transaction_conditions=TransactionConditions(
                     transports=[
                         TransactionTransport(
@@ -134,6 +151,12 @@ def test_invoice_to_spec_assembles_root_faktura() -> None:
     assert output.fa.fa_wiersz[0].stan_przed == Twybor1.VALUE_1
     assert output.fa.platnosc is not None
     assert output.fa.platnosc.zaplacono == Twybor1.VALUE_1
+    assert output.fa.fp == Twybor1.VALUE_1
+    assert output.fa.tp == Twybor1.VALUE_1
+    assert len(output.fa.dodatkowy_opis) == 1
+    assert output.fa.dodatkowy_opis[0].nr_wiersza == 2
+    assert output.fa.dodatkowy_opis[0].klucz == "ContractReference"
+    assert output.fa.dodatkowy_opis[0].wartosc == "A-2026-04"
     assert output.fa.warunki_transakcji is not None
     assert len(output.fa.warunki_transakcji.transport) == 1
     assert output.fa.warunki_transakcji.transport[0].rodzaj_transportu.name == "VALUE_3"
@@ -170,27 +193,29 @@ def test_invoice_to_spec_maps_correction_party_blocks() -> None:
                 issue_date=date(2026, 3, 29),
                 invoice_number="FK/1/2026",
                 invoice_type="Faktura korygująca",
-                correction_reason="Buyer data correction",
-                corrected_invoices=[
-                    {
-                        "issue_date": "2026-03-01",
-                        "invoice_number": "FV/1/2026",
-                        "ksef_id": "1234567890-20260301-ABCDEF-ABCDEF-FF",
-                    }
-                ],
-                corrected_seller=CorrectedSellerEntity(
-                    vat_prefix="DE",
-                    tax_id="1234567890",
-                    name="Old Seller Sp. z o.o.",
-                    address=make_polish_address(),
+                correction=InvoiceCorrectionContext(
+                    correction_reason="Buyer data correction",
+                    corrected_invoices=[
+                        {
+                            "issue_date": "2026-03-01",
+                            "invoice_number": "FV/1/2026",
+                            "ksef_id": "1234567890-20260301-ABCDEF-ABCDEF-FF",
+                        }
+                    ],
+                    corrected_seller=CorrectedSellerEntity(
+                        vat_prefix="DE",
+                        tax_id="1234567890",
+                        name="Old Seller Sp. z o.o.",
+                        address=make_polish_address(),
+                    ),
+                    corrected_buyers=[
+                        CorrectedBuyerEntity(
+                            eu_vat_id="DE123456789",
+                            name="Old Buyer GmbH",
+                            buyer_id="BUYER-1",
+                        )
+                    ],
                 ),
-                corrected_buyers=[
-                    CorrectedBuyerEntity(
-                        eu_vat_id="DE123456789",
-                        name="Old Buyer GmbH",
-                        buyer_id="BUYER-1",
-                    )
-                ],
                 rows=[
                     InvoiceRow(
                         name="Consulting service",
@@ -212,3 +237,115 @@ def test_invoice_to_spec_maps_correction_party_blocks() -> None:
     assert output.fa.podmiot2_k[0].dane_identyfikacyjne.kod_ue.name == "DE"
     assert output.fa.podmiot2_k[0].dane_identyfikacyjne.nr_vat_ue == "123456789"
     assert output.fa.podmiot2_k[0].idnabywcy == "BUYER-1"
+
+
+def test_invoice_to_spec_maps_foreign_currency_vat_and_annotations() -> None:
+    output = invoice_to_spec(
+        KsefInvoice(
+            invoice_header=InvoiceHeader(
+                generation_timestamp=datetime(2026, 2, 1, 12, 30, 45),
+                system_info="ACME ERP",
+            ),
+            seller=InvoiceEntity(
+                tax_id="1234567890",
+                name="Seller Sp. z o.o.",
+                address=make_polish_address(),
+            ),
+            buyer=InvoiceEntity(
+                name="Buyer GmbH",
+                address=InvoiceAddress(
+                    country_code="DE",
+                    address_line_1="Unter den Linden 1",
+                ),
+            ),
+            body=KsefInvoiceBody(
+                currency="EUR",
+                issue_date=date(2026, 3, 29),
+                invoice_number="FV/2/2026",
+                vat_currency_exchange_rate=Decimal("4.500000"),
+                annotations=InvoiceAnnotationsContext(
+                    cash_accounting=True,
+                    self_billing=True,
+                    reverse_charge_annotation=True,
+                    split_payment=True,
+                    tax_exemption=InvoiceTaxExemption(
+                        legal_basis_act="art. 43 ust. 1 pkt 2 ustawy"
+                    ),
+                    new_transport_supply=NewTransportSupply(
+                        article_42_5_required=True,
+                        items=[
+                            NewTransportMeansItem(
+                                available_from=date(2026, 3, 1),
+                                row_number=2,
+                                brand="Volvo",
+                                model="FH",
+                                registration_number="WX12345",
+                                land_vehicle_mileage="1250",
+                                vin="YV2RT40A1KA123456",
+                            )
+                        ],
+                    ),
+                    simplified_procedure=True,
+                ),
+                rows=[
+                    InvoiceRow(
+                        name="Standard service",
+                        quantity=Decimal("1"),
+                        unit_price_net=Decimal("100.00"),
+                        net_amount=Decimal("100.00"),
+                        vat_rate="23",
+                        vat_amount=Decimal("23.00"),
+                    ),
+                    InvoiceRow(
+                        name="Reduced service",
+                        quantity=Decimal("1"),
+                        unit_price_net=Decimal("100.00"),
+                        net_amount=Decimal("100.00"),
+                        vat_rate="8",
+                        vat_amount=Decimal("8.00"),
+                    ),
+                    InvoiceRow(
+                        name="Second reduced service",
+                        quantity=Decimal("1"),
+                        unit_price_net=Decimal("100.00"),
+                        net_amount=Decimal("100.00"),
+                        vat_rate="5",
+                        vat_amount=Decimal("5.00"),
+                    ),
+                    InvoiceRow(
+                        name="Taxi service",
+                        quantity=Decimal("1"),
+                        unit_price_net=Decimal("100.00"),
+                        net_amount=Decimal("100.00"),
+                        vat_rate="4",
+                        vat_amount=Decimal("4.00"),
+                        sale_category="taxi_flat_rate",
+                    ),
+                ],
+            ),
+        )
+    )
+
+    assert output.fa.kurs_waluty_z == "4.500000"
+    assert output.fa.p_14_1_w == "103.50"
+    assert output.fa.p_14_2_w == "36.00"
+    assert output.fa.p_14_3_w == "22.50"
+    assert output.fa.p_14_4_w == "18.00"
+    assert output.fa.adnotacje.p_16 == Twybor12.VALUE_1
+    assert output.fa.adnotacje.p_17 == Twybor12.VALUE_1
+    assert output.fa.adnotacje.p_18 == Twybor12.VALUE_1
+    assert output.fa.adnotacje.p_18_a == Twybor12.VALUE_1
+    assert output.fa.adnotacje.p_23 == Twybor12.VALUE_1
+    assert output.fa.adnotacje.zwolnienie.p_19 == Twybor1.VALUE_1
+    assert output.fa.adnotacje.zwolnienie.p_19_a == "art. 43 ust. 1 pkt 2 ustawy"
+    assert output.fa.adnotacje.nowe_srodki_transportu.p_22 == Twybor1.VALUE_1
+    assert output.fa.adnotacje.nowe_srodki_transportu.p_42_5 == Twybor12.VALUE_1
+    assert len(output.fa.adnotacje.nowe_srodki_transportu.nowy_srodek_transportu) == 1
+    assert (
+        output.fa.adnotacje.nowe_srodki_transportu.nowy_srodek_transportu[0].p_22_bmk
+        == "Volvo"
+    )
+    assert (
+        output.fa.adnotacje.nowe_srodki_transportu.nowy_srodek_transportu[0].p_22_b1
+        == "YV2RT40A1KA123456"
+    )

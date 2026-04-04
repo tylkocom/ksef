@@ -7,7 +7,13 @@ from typing import Annotated
 from pydantic import Field, model_validator
 
 from ksef2.domain.models import KSeFBaseModel
-from ksef2.domain.models.fa3.body.advance_payment import PartialAdvancePayment
+from ksef2.domain.models.fa3.body.advance_payment import (
+    InvoiceAdvanceContext,
+)
+from ksef2.domain.models.fa3.body.annotations import InvoiceAnnotationsContext
+from ksef2.domain.models.fa3.body.correction import (
+    InvoiceCorrectionContext,
+)
 from ksef2.domain.models.fa3.body.order import InvoiceOrder, InvoiceOrderLine
 from ksef2.domain.models.fa3.body.payment import InvoicePayment
 from ksef2.domain.models.fa3.body.row import Money, InvoiceRow, SaleCategory, VatRate
@@ -17,15 +23,6 @@ from ksef2.domain.models.fa3.body.settlement import (
     SettlementDeduction,
 )
 from ksef2.domain.models.fa3.body.transaction import TransactionConditions
-from ksef2.domain.models.fa3.drafts import (
-    AdvanceInvoiceReference,
-    CorrectedInvoiceReference,
-    MarginProcedure,
-)
-from ksef2.domain.models.fa3.party import (
-    CorrectedBuyerEntity,
-    CorrectedSellerEntity,
-)
 
 
 # Helper to round to 2 decimal places (standard Polish accounting rounding)
@@ -49,6 +46,35 @@ def get_placeholder_invoice_number() -> str:
     return f"DEMO-{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
 
+class AdditionalDescriptionEntry(KSeFBaseModel):
+    """FA(3) additional invoice description entry.
+
+    References:
+        schemat.TkluczWartosc
+
+    Maps:
+        row_number - nr_wiersza (int)
+        key - klucz (str)
+        value - wartosc (str)
+    """
+
+    row_number: int | None = Field(
+        default=None,
+        gt=0,
+        description="nr_wiersza: Optional invoice row number this entry refers to.",
+    )
+    key: str = Field(
+        min_length=1,
+        max_length=256,
+        description="klucz: Additional description key.",
+    )
+    value: str = Field(
+        min_length=1,
+        max_length=256,
+        description="wartosc: Additional description value.",
+    )
+
+
 class KsefInvoiceBody(KSeFBaseModel):
     currency: str = Field(
         default="PLN",
@@ -61,9 +87,6 @@ class KsefInvoiceBody(KSeFBaseModel):
     invoice_number: str = Field(
         description="p_2: Sequential invoice number identifying the invoice.",
         default_factory=get_placeholder_invoice_number,
-    )
-    invoice_type: InvoiceType = Field(
-        default=InvoiceType.VAT, description="rodzaj_faktury: Type of invoice."
     )
 
     warehouse_documents: list[str] = Field(
@@ -84,61 +107,59 @@ class KsefInvoiceBody(KSeFBaseModel):
         description="okres_fa_b: End date of the accounting/service period.",
     )
 
+    # Computed summary properties below map to P_13_1..P_13_11, P_14_1..P_14_5, and P_15.
+    vat_currency_exchange_rate: Decimal | None = Field(
+        default=None,
+        gt=0,
+        description="kurs_waluty_z: Exchange rate used to convert VAT amounts to PLN on foreign-currency invoices.",
+    )
+    annotations: InvoiceAnnotationsContext | None = Field(
+        default=None,
+        description="Annotation-specific data grouped from Fa/Adnotacje.",
+    )
+    invoice_type: InvoiceType = Field(
+        default=InvoiceType.VAT, description="rodzaj_faktury: Type of invoice."
+    )
+    correction: InvoiceCorrectionContext | None = Field(
+        default=None,
+        description="Correction-specific data grouped from Fa correction fields.",
+    )
+    advance: InvoiceAdvanceContext | None = Field(
+        default=None,
+        description="Advance-invoice-specific data grouped from Fa advance fields.",
+    )
+    fp_invoice: bool = Field(
+        default=False,
+        description="fp: Marks the invoice as the document referred to in art. 109 ust. 3d ustawy.",
+    )
+    related_party_transaction: bool = Field(
+        default=False,
+        description="tp: Marks related-party links between buyer and seller/service provider.",
+    )
+    additional_description: list[AdditionalDescriptionEntry] = Field(
+        default_factory=list,
+        description="dodatkowy_opis: Additional key/value invoice metadata entries.",
+    )
     return_of_excise: bool | None = Field(
         default=None,
         description="zwrot_akcyzy: Flag indicating return of excise duty.",
     )
-
-    correction_reason: str | None = Field(
-        default=None, description="przyczyna_korekty: Optional correction reason."
-    )
-    corrected_invoices: list[CorrectedInvoiceReference] = Field(
-        default_factory=list,
-        description="dane_fa_korygowanej: References to corrected invoices.",
-    )
-    corrected_seller: CorrectedSellerEntity | None = Field(
-        default=None,
-        description="podmiot1_k: Seller data from the corrected invoice.",
-    )
-    corrected_buyers: list[CorrectedBuyerEntity] = Field(
-        default_factory=list,
-        description="podmiot2_k: Buyer data from the corrected invoice.",
-    )
-
-    margin_procedure: MarginProcedure | None = Field(
-        default=None,
-        description="adnotacje/pmarzy: Margin procedure flag.",
-    )
-    advance_partial_payments: list[PartialAdvancePayment] = Field(
-        default_factory=list,
-        description="zaliczka_czesciowa: Partial advance payments.",
-    )
-    # --- aggregated fields ---
-    advance_invoice_references: list[AdvanceInvoiceReference] = Field(
-        default_factory=list,
-        description="faktura_zaliczkowa: Referenced advance invoices on settlements.",
-    )
-
     rows: list[InvoiceRow] = Field(
         default_factory=list,
         description="fa_wiersz: Detailed invoice line items.",
     )
-
     settlement: InvoiceSettlement | None = Field(
         default=None,
         description="rozliczenie: Additional settlement data for the invoice.",
     )
-
     payment: InvoicePayment | None = Field(
         default=None,
         description="platnosc: Payment details for the invoice.",
     )
-
     transaction_conditions: TransactionConditions | None = Field(
         default=None,
         description="warunki_transakcji: Transaction conditions for the invoice.",
     )
-
     order: InvoiceOrder | None = Field(
         default=None,
         description="zamowienie: Order block used on advance invoices.",
@@ -165,9 +186,19 @@ class KsefInvoiceBody(KSeFBaseModel):
             and self.period_start > self.period_end
         ):
             raise ValueError("period_start cannot be later than period_end")
+        self._validate_vat_currency_exchange_rate()
         self._validate_row_presence()
         self._validate_intent_specific_data()
         return self
+
+    def _validate_vat_currency_exchange_rate(self) -> None:
+        if self.vat_currency_exchange_rate is None:
+            return
+
+        if self.currency.upper() == "PLN":
+            raise ValueError(
+                "vat_currency_exchange_rate is only valid for non-PLN invoices"
+            )
 
     def _validate_row_presence(self) -> None:
         if not self.rows and self.order is None:
@@ -184,13 +215,23 @@ class KsefInvoiceBody(KSeFBaseModel):
             raise ValueError("At least one invoice line is required")
 
     def _validate_intent_specific_data(self) -> None:
-        if self.invoice_type == InvoiceType.CORRECTING and not self.corrected_invoices:
+        correction = self.correction
+        advance = self.advance
+
+        corrected_invoices = correction.corrected_invoices if correction else []
+        corrected_seller = correction.corrected_seller if correction else None
+        corrected_buyers = correction.corrected_buyers if correction else []
+        advance_invoice_references = (
+            advance.advance_invoice_references if advance else []
+        )
+
+        if self.invoice_type == InvoiceType.CORRECTING and not corrected_invoices:
             raise ValueError("Correcting invoices require corrected_invoices data")
-        if self.invoice_type == InvoiceType.ROZ and not self.advance_invoice_references:
+        if self.invoice_type == InvoiceType.ROZ and not advance_invoice_references:
             raise ValueError(
                 "Settlement invoices require at least one advance invoice reference"
             )
-        if self.corrected_seller is not None or self.corrected_buyers:
+        if corrected_seller is not None or corrected_buyers:
             if self.invoice_type not in {
                 InvoiceType.CORRECTING,
                 InvoiceType.CORRECTING_ZAL,
@@ -199,7 +240,10 @@ class KsefInvoiceBody(KSeFBaseModel):
                 raise ValueError(
                     "corrected_seller and corrected_buyers are only valid for correcting invoices"
                 )
-        if self.margin_procedure is not None:
+        margin_procedure = (
+            self.annotations.margin_procedure if self.annotations else None
+        )
+        if margin_procedure is not None:
             if not self.rows:
                 raise ValueError("Margin procedure requires invoice lines")
             non_margin_lines = [
@@ -368,6 +412,47 @@ class KsefInvoiceBody(KSeFBaseModel):
             lambda line: line.sale_category == SaleCategory.TAXI_FLAT_RATE
         )
 
+    def _vat_total_in_pln(self, value: Money) -> Money | None:
+        if self.vat_currency_exchange_rate is None:
+            return None
+        return round_pln(value * self.vat_currency_exchange_rate)
+
+    @property
+    def base_rate_vat_total_pln(
+        self,
+    ) -> Annotated[
+        Money | None,
+        "p_14_1_w: VAT total for the basic rate bucket converted to PLN.",
+    ]:
+        return self._vat_total_in_pln(self.base_rate_vat_total)
+
+    @property
+    def first_reduced_rate_vat_total_pln(
+        self,
+    ) -> Annotated[
+        Money | None,
+        "p_14_2_w: VAT total for the first reduced rate bucket converted to PLN.",
+    ]:
+        return self._vat_total_in_pln(self.first_reduced_rate_vat_total)
+
+    @property
+    def second_reduced_rate_vat_total_pln(
+        self,
+    ) -> Annotated[
+        Money | None,
+        "p_14_3_w: VAT total for the second reduced rate bucket converted to PLN.",
+    ]:
+        return self._vat_total_in_pln(self.second_reduced_rate_vat_total)
+
+    @property
+    def taxi_flat_rate_vat_total_pln(
+        self,
+    ) -> Annotated[
+        Money | None,
+        "p_14_4_w: VAT total for the taxi flat-rate bucket converted to PLN.",
+    ]:
+        return self._vat_total_in_pln(self.taxi_flat_rate_vat_total)
+
     @property
     def special_procedure_xii_net_total(
         self,
@@ -484,7 +569,9 @@ class KsefInvoiceBody(KSeFBaseModel):
 
         referenced_deductions = [
             reference.deduction_amount
-            for reference in self.advance_invoice_references
+            for reference in (
+                self.advance.advance_invoice_references if self.advance else []
+            )
             if reference.deduction_amount is not None
         ]
         return sum(

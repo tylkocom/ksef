@@ -115,46 +115,54 @@ def _to_spec(request: BaseModel) -> object:
 
 @_to_spec.register
 def _(request: Attachment) -> FakturaZalacznik:
-    return FakturaZalacznik(
-        blok_danych=[to_spec(block) for block in request.data_blocks]
-    )
+    data_blocks = [to_spec(block) for block in request.data_blocks]
+
+    return FakturaZalacznik(blok_danych=data_blocks)
 
 
 @_to_spec.register
 def _(request: DataBlock) -> FakturaZalacznikBlokDanych:
+    text = (
+        FakturaZalacznikBlokDanychTekst(akapit=list(request.paragraphs))
+        if request.paragraphs
+        else None
+    )
+    tables = [to_spec(table) for table in request.tables] if request.tables else []
+
     return FakturaZalacznikBlokDanych(
         znaglowek=request.header,
         meta_dane=_to_spec_meta_data(request.meta_data),
-        tekst=FakturaZalacznikBlokDanychTekst(akapit=list(request.paragraphs))
-        if request.paragraphs
-        else None,
-        tabela=[to_spec(table) for table in request.tables] if request.tables else [],
+        tekst=text,
+        tabela=tables,
     )
 
 
 @_to_spec.register
 def _(request: AttachmentTable) -> FakturaZalacznikBlokDanychTabela:
+    columns = [
+        FakturaZalacznikBlokDanychTabelaTnaglowekKol(
+            nkom=FakturaZalacznikBlokDanychTabelaTnaglowekKolNkom(
+                value=_to_spec_column_name(index, request.columns_names)
+            ),
+            typ=_to_spec_column_type(column_type),
+        )
+        for index, column_type in enumerate(request.columns_format, start=1)
+    ]
+    rows = [
+        FakturaZalacznikBlokDanychTabelaWiersz(wkom=list(row)) for row in request.rows
+    ]
+    summary = (
+        FakturaZalacznikBlokDanychTabelaSuma(skom=list(request.summary))
+        if request.summary
+        else None
+    )
+
     return FakturaZalacznikBlokDanychTabela(
         tmeta_dane=_to_spec_table_meta_data(request.meta_data),
         opis=request.description,
-        tnaglowek=FakturaZalacznikBlokDanychTabelaTnaglowek(
-            kol=[
-                FakturaZalacznikBlokDanychTabelaTnaglowekKol(
-                    nkom=FakturaZalacznikBlokDanychTabelaTnaglowekKolNkom(
-                        value=_to_spec_column_name(index, request.columns_names)
-                    ),
-                    typ=_to_spec_column_type(column_type),
-                )
-                for index, column_type in enumerate(request.columns_format, start=1)
-            ]
-        ),
-        wiersz=[
-            FakturaZalacznikBlokDanychTabelaWiersz(wkom=list(row))
-            for row in request.rows
-        ],
-        suma=FakturaZalacznikBlokDanychTabelaSuma(skom=list(request.summary))
-        if request.summary
-        else None,
+        tnaglowek=FakturaZalacznikBlokDanychTabelaTnaglowek(kol=columns),
+        wiersz=rows,
+        suma=summary,
     )
 
 
@@ -213,30 +221,42 @@ def _from_spec(schema: object) -> object:
 
 @_from_spec.register
 def _(schema: FakturaZalacznik) -> Attachment:
-    return Attachment(data_blocks=[from_spec(block) for block in schema.blok_danych])
+    data_blocks = [from_spec(block) for block in schema.blok_danych]
+
+    return Attachment(data_blocks=data_blocks)
 
 
 @_from_spec.register
 def _(schema: FakturaZalacznikBlokDanych) -> DataBlock:
+    meta_data = _from_spec_meta_data(schema.meta_dane) if schema.meta_dane else None
+    paragraphs = list(schema.tekst.akapit) if schema.tekst else None
+    tables = [from_spec(table) for table in schema.tabela] if schema.tabela else None
+
     return DataBlock(
         header=schema.znaglowek,
-        meta_data=_from_spec_meta_data(schema.meta_dane) if schema.meta_dane else None,
-        paragraphs=list(schema.tekst.akapit) if schema.tekst else None,
-        tables=[from_spec(table) for table in schema.tabela] if schema.tabela else None,
+        meta_data=meta_data,
+        paragraphs=paragraphs,
+        tables=tables,
     )
 
 
 @_from_spec.register
 def _(schema: FakturaZalacznikBlokDanychTabela) -> AttachmentTable:
+    meta_data = (
+        _from_spec_table_meta_data(schema.tmeta_dane) if schema.tmeta_dane else []
+    )
+    columns_names = [column.nkom.value for column in schema.tnaglowek.kol]
+    columns_format = [
+        _from_spec_column_type(column.typ.value) for column in schema.tnaglowek.kol
+    ]
+    rows = [list(row.wkom) for row in schema.wiersz]
+    summary = list(schema.suma.skom) if schema.suma else None
+
     return AttachmentTable(
-        meta_data=_from_spec_table_meta_data(schema.tmeta_dane)
-        if schema.tmeta_dane
-        else [],
+        meta_data=meta_data,
         description=schema.opis,
-        columns_names=[column.nkom.value for column in schema.tnaglowek.kol],
-        columns_format=[
-            _from_spec_column_type(column.typ.value) for column in schema.tnaglowek.kol
-        ],
-        rows=[list(row.wkom) for row in schema.wiersz],
-        summary=list(schema.suma.skom) if schema.suma else None,
+        columns_names=columns_names,
+        columns_format=columns_format,
+        rows=rows,
+        summary=summary,
     )

@@ -4,28 +4,36 @@ from ksef2.domain.models.fa3.attachment import (
     DataBlock,
 )
 from ksef2.domain.models.fa3.invoice import (
-    InvoiceDetails,
     KsefInvoice,
 )
 from ksef2.domain.models.fa3.party import (
     ContactInfo,
-    CorrectedBuyerEntity,
-    CorrectedSellerEntity,
     InvoiceAddress,
     InvoiceEntity,
 )
+from ksef2.domain.models.fa3.body.correction import (
+    CorrectedBuyerEntity,
+    CorrectedSellerEntity,
+)
 from ksef2.domain.models.fa3.body import (
     AdvancePayment,
+    AdditionalDescriptionEntry,
     AdvanceOrderLine,
+    InvoiceAdvanceContext,
+    InvoiceAnnotationsContext,
+    InvoiceCorrectionContext,
     InvoiceSettlement,
     InvoiceOrder,
     InvoiceOrderLine,
     InvoiceRow,
+    InvoiceTaxExemption,
     KsefInvoiceBody,
     PartialAdvancePayment,
     SettlementCharge,
     SettlementDeduction,
     TransactionConditions,
+    NewTransportMeansItem,
+    NewTransportSupply,
 )
 from ksef2.domain.models.fa3.header import InvoiceHeader
 from ksef2.domain.models.fa3.drafts import (
@@ -38,7 +46,10 @@ from ksef2.domain.models.fa3.drafts import (
 __all__ = [
     "Attachment",
     "AdvancePayment",
+    "InvoiceAdvanceContext",
+    "InvoiceAnnotationsContext",
     "AdvanceInvoiceReference",
+    "AdditionalDescriptionEntry",
     "AdvanceOrderLine",
     "AttachmentTable",
     "ContactInfo",
@@ -48,16 +59,19 @@ __all__ = [
     "DataBlock",
     "DraftIntent",
     "InvoiceAddress",
-    "InvoiceDetails",
     "InvoiceEntity",
+    "InvoiceCorrectionContext",
     "InvoiceRow",
     "InvoiceOrder",
     "InvoiceOrderLine",
     "InvoiceSettlement",
+    "InvoiceTaxExemption",
     "InvoiceHeader",
     "KsefInvoiceBody",
     "KsefInvoice",
     "MarginProcedure",
+    "NewTransportMeansItem",
+    "NewTransportSupply",
     "PartialAdvancePayment",
     "SettlementCharge",
     "SettlementDeduction",

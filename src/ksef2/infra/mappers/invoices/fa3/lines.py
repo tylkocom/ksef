@@ -6,12 +6,15 @@ from typing import overload
 
 from pydantic import BaseModel
 
-from ksef2.domain.models.fa3 import InvoiceLine
+from ksef2.domain.models.fa3 import AdvanceOrderLine
+from ksef2.domain.models.fa3.body import SaleCategory, VatRate, InvoiceRow
 from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import Twybor1
 from ksef2.infra.schema.fa3.models.schemat import (
     FakturaFaFaWiersz,
+    FakturaFaZamowienieZamowienieWiersz,
     Tgtu,
     ToznaczenieProcedury,
+    ToznaczenieProceduryZ,
     TstawkaPodatku,
 )
 
@@ -22,11 +25,37 @@ def _format_decimal(value: Decimal | None) -> str | None:
     return format(value, "f")
 
 
-def _map_vat_rate(value: str) -> TstawkaPodatku:
+def _map_vat_rate(
+    value: str | VatRate | None, sale_category: str | SaleCategory
+) -> TstawkaPodatku | None:
+    if value is None:
+        return None
+    if isinstance(value, VatRate):
+        raw_value = value.value
+    else:
+        raw_value = value
+    if isinstance(sale_category, SaleCategory):
+        category = sale_category.value
+    else:
+        category = sale_category
+
+    if raw_value == VatRate.VAT_0.value:
+        if category == SaleCategory.ZERO_WDT.value:
+            raw_value = TstawkaPodatku.VALUE_0_WDT.value
+        elif category == SaleCategory.ZERO_EXPORT.value:
+            raw_value = TstawkaPodatku.VALUE_0_EX.value
+        else:
+            raw_value = TstawkaPodatku.VALUE_0_KR.value
+    elif raw_value == VatRate.NOT_SUBJECT.value:
+        if category == SaleCategory.ARTICLE_100.value:
+            raw_value = TstawkaPodatku.NP_II.value
+        else:
+            raw_value = TstawkaPodatku.NP_I.value
+
     try:
-        return TstawkaPodatku(value)
+        return TstawkaPodatku(raw_value)
     except ValueError:
-        raise ValueError(f"Unsupported FA(3) VAT rate: {value}") from None
+        raise ValueError(f"Unsupported FA(3) VAT rate: {raw_value}") from None
 
 
 def _map_gtu(value: str | None) -> Tgtu | None:
@@ -47,6 +76,15 @@ def _map_procedure(value: str | None) -> ToznaczenieProcedury | None:
         raise ValueError(f"Unsupported FA(3) procedure code: {value}") from None
 
 
+def _map_order_procedure(value: str | None) -> ToznaczenieProceduryZ | None:
+    if value is None:
+        return None
+    try:
+        return ToznaczenieProceduryZ(value.upper())
+    except ValueError:
+        raise ValueError(f"Unsupported FA(3) order procedure code: {value}") from None
+
+
 def _map_checkbox(value: bool | None) -> Twybor1 | None:
     if value:
         return Twybor1.VALUE_1
@@ -54,7 +92,7 @@ def _map_checkbox(value: bool | None) -> Twybor1 | None:
 
 
 @overload
-def to_spec(request: InvoiceLine, row_number: int) -> FakturaFaFaWiersz: ...
+def to_spec(request: InvoiceRow, row_number: int) -> FakturaFaFaWiersz: ...
 
 
 @overload
@@ -75,7 +113,7 @@ def _to_spec(request: BaseModel, row_number: int) -> object:
 
 
 @_to_spec.register
-def _(request: InvoiceLine, row_number: int) -> FakturaFaFaWiersz:
+def _(request: InvoiceRow, row_number: int) -> FakturaFaFaWiersz:
     return FakturaFaFaWiersz(
         # Sequential number identifying the row in the invoice.
         nr_wiersza_fa=row_number,
@@ -106,7 +144,9 @@ def _(request: InvoiceLine, row_number: int) -> FakturaFaFaWiersz:
         # Gross unit price used only in special gross-pricing scenarios.
         p_9_b=_format_decimal(request.unit_price_gross),
         # Amount of price reduction/discount applied to the line.
-        p_10=_format_decimal(request.discount_amount),
+        p_10=_format_decimal(request.discount_amount)
+        if request.discount_amount not in {None, Decimal("0.00")}
+        else None,
         # Total net value of the line item.
         p_11=_format_decimal(request.net_amount),
         # Total gross value of the line item for gross-pricing scenarios.
@@ -114,7 +154,7 @@ def _(request: InvoiceLine, row_number: int) -> FakturaFaFaWiersz:
         # Total VAT tax amount for this line item.
         p_11_vat=_format_decimal(request.vat_amount),
         # VAT rate applied, e.g. "23" or "zw".
-        p_12=_map_vat_rate(request.vat_rate),
+        p_12=_map_vat_rate(request.vat_rate, request.sale_category),
         # VAT-on-e-commerce percentage used for the special Title XII regime.
         p_12_xii=request.vat_rate_xii,
         # Annex 15 marker where value "1" means the line belongs to Annex 15.
@@ -129,4 +169,32 @@ def _(request: InvoiceLine, row_number: int) -> FakturaFaFaWiersz:
         kurs_waluty=_format_decimal(request.currency_exchange_rate),
         # Marker meaning this row shows the state before correction on a correcting invoice.
         stan_przed=_map_checkbox(request.before_correction),
+    )
+
+
+@_to_spec.register
+def _(
+    request: AdvanceOrderLine, row_number: int
+) -> FakturaFaZamowienieZamowienieWiersz:
+    return FakturaFaZamowienieZamowienieWiersz(
+        nr_wiersza_zam=row_number,
+        uu_idz=request.unique_id,
+        p_7_z=request.name,
+        indeks_z=request.sku,
+        gtinz=request.gtin,
+        pkwi_uz=request.pkwiu,
+        cnz=request.cn,
+        pkobz=request.pkob,
+        p_8_az=request.unit_of_measure,
+        p_8_bz=_format_decimal(request.quantity),
+        p_9_az=_format_decimal(request.unit_price_net),
+        p_11_netto_z=_format_decimal(request.net_amount),
+        p_11_vat_z=_format_decimal(request.vat_amount),
+        p_12_z=_map_vat_rate(request.vat_rate, request.sale_category),
+        p_12_z_xii=request.vat_rate_xii,
+        p_12_z_zal_15=_map_checkbox(request.annex_15_marker),
+        gtuz=_map_gtu(request.gtu_code),
+        procedura_z=_map_order_procedure(request.procedure),
+        kwota_akcyzy_z=_format_decimal(request.excise_amount),
+        stan_przed_z=_map_checkbox(request.before_correction),
     )

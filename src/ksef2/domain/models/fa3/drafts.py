@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 from enum import StrEnum
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import field_validator, model_validator
 
 from ksef2.domain.models import KSeFBaseModel
 
@@ -92,58 +92,3 @@ class SettlementDeduction(KSeFBaseModel):
         if value <= Decimal("0.00"):
             raise ValueError("amount must be greater than zero")
         return round_pln(value)
-
-
-class AdvanceOrderLine(KSeFBaseModel):
-    name: str | None = Field(default=None, description="p_7_z")
-    quantity: Decimal | None = Field(default=None, description="p_8_bz")
-    unit_of_measure: str | None = Field(default=None, description="p_8_az")
-    gross_amount: Decimal = Field(description="Gross value of the advanced order row")
-    vat_rate: str | None = Field(default=None, description="p_12_z")
-    sale_category: str = Field(default="standard")
-    unit_price_net: Decimal | None = Field(default=None, description="p_9_az")
-    net_amount: Decimal | None = Field(default=None, description="p_11_netto_z")
-    vat_amount: Decimal | None = Field(default=None, description="p_11_vat_z")
-    vat_rate_xii: Decimal | None = Field(default=None, description="p_12_z_xii")
-    annex_15_marker: bool | None = Field(default=None, description="p_12_z_zal_15")
-    unique_id: str | None = Field(default=None, description="uu_idz")
-    sku: str | None = Field(default=None, description="indeks_z")
-    gtin: str | None = Field(default=None, description="gtinz")
-    pkwiu: str | None = Field(default=None, description="pkwi_uz")
-    cn: str | None = Field(default=None, description="cnz")
-    pkob: str | None = Field(default=None, description="pkobz")
-    gtu_code: str | None = Field(default=None, description="gtuz")
-    procedure: str | None = Field(default=None, description="procedura_z")
-    excise_amount: Decimal | None = Field(default=None, description="kwota_akcyzy_z")
-    before_correction: bool = Field(default=False, description="stan_przed_z")
-
-    @field_validator("gross_amount")
-    @classmethod
-    def validate_gross_amount(cls, value: Decimal) -> Decimal:
-        if value <= Decimal("0.00"):
-            raise ValueError("gross_amount must be greater than zero")
-        return round_pln(value)
-
-    @model_validator(mode="after")
-    def compute_financial_fields(self) -> "AdvanceOrderLine":
-        vat_percent = self._vat_percent()
-        if self.net_amount is None:
-            if vat_percent is None:
-                self.net_amount = self.gross_amount
-            else:
-                divisor = Decimal("1.00") + vat_percent
-                self.net_amount = round_pln(self.gross_amount / divisor)
-
-        if self.vat_amount is None:
-            self.vat_amount = round_pln(self.gross_amount - self.net_amount)
-
-        if self.unit_price_net is None and self.quantity not in {None, Decimal("0")}:
-            self.unit_price_net = self.net_amount / self.quantity
-
-        return self
-
-    def _vat_percent(self) -> Decimal | None:
-        if self.vat_rate in {"23", "22", "8", "7", "5", "4"}:
-            assert self.vat_rate is not None
-            return Decimal(self.vat_rate) / Decimal("100")
-        return None

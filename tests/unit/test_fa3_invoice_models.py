@@ -5,14 +5,17 @@ import pytest
 from pydantic import ValidationError
 
 from ksef2.domain.models.fa3 import (
+    AdvanceOrderLine,
+    InvoiceOrder,
     ContactInfo,
     InvoiceAddress,
     InvoiceEntity,
     InvoiceHeader,
-    InvoiceLine,
+    InvoiceTaxExemption,
     KsefInvoiceBody,
     KsefInvoice,
 )
+from ksef2.domain.models.fa3.body import InvoiceType, InvoiceRow
 
 
 def make_polish_address() -> InvoiceAddress:
@@ -23,8 +26,8 @@ def make_polish_address() -> InvoiceAddress:
     )
 
 
-def make_invoice_line() -> InvoiceLine:
-    return InvoiceLine(
+def make_invoice_line() -> InvoiceRow:
+    return InvoiceRow(
         name="Consulting service",
         quantity=Decimal("10"),
         unit_price_net=Decimal("100.00"),
@@ -112,7 +115,7 @@ def test_ksef_invoice_rejects_seller_without_tax_id() -> None:
             body=KsefInvoiceBody(
                 issue_date=date(2026, 3, 29),
                 invoice_number="FV/1/2026",
-                lines=[make_invoice_line()],
+                rows=[make_invoice_line()],
             ),
         )
 
@@ -121,7 +124,7 @@ def test_invoice_body_defaults_currency_to_pln() -> None:
     body = KsefInvoiceBody(
         issue_date=date(2026, 3, 29),
         invoice_number="FV/1/2026",
-        lines=[make_invoice_line()],
+        rows=[make_invoice_line()],
     )
 
     assert body.currency == "PLN"
@@ -138,15 +141,20 @@ def test_invoice_system_context_accepts_valid_values() -> None:
 
 
 def test_invoice_system_context_rejects_too_long_system_info() -> None:
-    with pytest.raises(ValidationError, match="at most 250"):
+    InvoiceHeader(
+        generation_timestamp=datetime(2026, 2, 1, 12, 30, 45),
+        system_info="X" * 256,
+    )
+
+    with pytest.raises(ValidationError, match="at most 256"):
         InvoiceHeader(
             generation_timestamp=datetime(2026, 2, 1, 12, 30, 45),
-            system_info="X" * 251,
+            system_info="X" * 257,
         )
 
 
 def test_invoice_line_accepts_full_fa3_shape() -> None:
-    line = InvoiceLine(
+    line = InvoiceRow(
         name="Laptop",
         quantity=Decimal("2"),
         unit_price_net=Decimal("3500.12345678"),
@@ -214,19 +222,21 @@ def test_ksef_invoice_accepts_lines_collection() -> None:
         body=KsefInvoiceBody(
             issue_date=date(2026, 3, 29),
             invoice_number="FV/1/2026",
-            lines=[make_invoice_line()],
+            rows=[make_invoice_line()],
         ),
     )
 
-    assert len(invoice.body.lines) == 1
-    assert invoice.body.lines[0].name == "Consulting service"
+    assert len(invoice.body.rows) == 1
+    assert invoice.body.rows[0].name == "Consulting service"
     assert invoice.total_net == Decimal("1000.00")
     assert invoice.total_vat == Decimal("230.00")
     assert invoice.total_gross == Decimal("1230.00")
 
 
 def test_ksef_invoice_rejects_empty_lines_collection() -> None:
-    with pytest.raises(ValidationError, match="at least 1 item"):
+    with pytest.raises(
+        ValidationError, match="At least one invoice line or order is required"
+    ):
         KsefInvoice(
             invoice_header=InvoiceHeader(
                 generation_timestamp=datetime(2026, 2, 1, 12, 30, 45),
@@ -247,9 +257,32 @@ def test_ksef_invoice_rejects_empty_lines_collection() -> None:
             body=KsefInvoiceBody(
                 issue_date=date(2026, 3, 29),
                 invoice_number="FV/1/2026",
-                lines=[],
+                rows=[],
             ),
         )
+
+
+def test_advance_invoice_body_accepts_order_without_fa_wiersz() -> None:
+    body = KsefInvoiceBody(
+        issue_date=date(2026, 3, 29),
+        invoice_number="FZ/1/2026",
+        invoice_type=InvoiceType.ZAL,
+        order=InvoiceOrder(
+            order_lines=[
+                AdvanceOrderLine(
+                    name="Projekt",
+                    gross_amount=Decimal("1230.00"),
+                    vat_rate="23",
+                )
+            ],
+        ),
+    )
+
+    assert body.rows == []
+    assert len(body.order_lines) == 1
+    assert body.total_net == Decimal("1000.00")
+    assert body.total_vat == Decimal("230.00")
+    assert body.total_gross == Decimal("1230.00")
 
 
 def test_invoice_address_normalizes_country_code() -> None:
@@ -277,3 +310,24 @@ def test_invoice_address_accepts_foreign_shape() -> None:
     )
 
     assert entity.address.address_line_1 == "Unter den Linden 1"
+
+
+def test_invoice_tax_exemption_requires_exactly_one_basis() -> None:
+    with pytest.raises(ValidationError, match="Exactly one exemption legal basis"):
+        InvoiceTaxExemption(
+            legal_basis_act="art. 43 ust. 1 pkt 2 ustawy",
+            legal_basis_other="other basis",
+        )
+
+
+def test_invoice_body_rejects_pln_vat_exchange_rate() -> None:
+    with pytest.raises(
+        ValidationError,
+        match="vat_currency_exchange_rate is only valid for non-PLN invoices",
+    ):
+        KsefInvoiceBody(
+            issue_date=date(2026, 3, 29),
+            invoice_number="FV/1/2026",
+            vat_currency_exchange_rate=Decimal("4.500000"),
+            rows=[make_invoice_line()],
+        )

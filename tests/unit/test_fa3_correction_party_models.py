@@ -6,7 +6,13 @@ from ksef2.domain.models.fa3 import (
     CorrectedSellerEntity,
     InvoiceAddress,
 )
-from ksef2.domain.models.fa3.body import InvoiceType, KsefInvoiceBody, InvoiceRow
+from ksef2.domain.models.fa3.body import (
+    InvoiceAdvanceContext,
+    InvoiceCorrectionContext,
+    InvoiceType,
+    KsefInvoiceBody,
+    InvoiceRow,
+)
 
 
 def make_polish_address() -> InvoiceAddress:
@@ -55,10 +61,12 @@ def test_invoice_body_rejects_correction_parties_on_non_correcting_invoice() -> 
             issue_date="2026-03-29",
             invoice_number="FV/1/2026",
             rows=[make_invoice_line()],
-            corrected_seller=CorrectedSellerEntity(
-                tax_id="1234567890",
-                name="Old Seller Sp. z o.o.",
-                address=make_polish_address(),
+            correction=InvoiceCorrectionContext(
+                corrected_seller=CorrectedSellerEntity(
+                    tax_id="1234567890",
+                    name="Old Seller Sp. z o.o.",
+                    address=make_polish_address(),
+                ),
             ),
         )
 
@@ -69,21 +77,45 @@ def test_invoice_body_accepts_correction_parties_on_correcting_invoice() -> None
         invoice_number="FK/1/2026",
         invoice_type=InvoiceType.CORRECTING,
         rows=[make_invoice_line()],
-        corrected_invoices=[
-            {
-                "issue_date": "2026-03-01",
-                "invoice_number": "FV/1/2026",
-                "ksef_id": "1234567890-20260301-ABCDEF-ABCDEF-FF",
-            }
-        ],
-        corrected_buyers=[
-            CorrectedBuyerEntity(
-                eu_vat_id="de123456789",
-                name="Old Buyer GmbH",
-                buyer_id="BUYER-1",
-            )
-        ],
+        correction=InvoiceCorrectionContext(
+            corrected_invoices=[
+                {
+                    "issue_date": "2026-03-01",
+                    "invoice_number": "FV/1/2026",
+                    "ksef_id": "1234567890-20260301-ABCDEF-ABCDEF-FF",
+                }
+            ],
+            corrected_buyers=[
+                CorrectedBuyerEntity(
+                    eu_vat_id="de123456789",
+                    name="Old Buyer GmbH",
+                    buyer_id="BUYER-1",
+                )
+            ],
+        ),
     )
 
-    assert len(body.corrected_buyers) == 1
-    assert body.corrected_buyers[0].eu_vat_id == "DE123456789"
+    assert body.correction is not None
+    assert len(body.correction.corrected_buyers) == 1
+    assert body.correction.corrected_buyers[0].eu_vat_id == "DE123456789"
+
+
+def test_invoice_body_accepts_advance_context() -> None:
+    body = KsefInvoiceBody(
+        issue_date="2026-03-29",
+        invoice_number="FR/1/2026",
+        invoice_type="Faktura wystawiona w związku z art. 106f ust. 3 ustawy",
+        rows=[make_invoice_line()],
+        advance=InvoiceAdvanceContext(
+            advance_invoice_references=[
+                {
+                    "ksef_id": "1234567890-20260301-ABCDEF-ABCDEF-FF",
+                    "deduction_amount": "500.00",
+                    "deduction_reason": "Rozliczenie faktury zaliczkowej nr 1",
+                }
+            ]
+        ),
+    )
+
+    assert body.advance is not None
+    assert len(body.advance.advance_invoice_references) == 1

@@ -1,6 +1,5 @@
 """Public FA(3) invoice domain models."""
 
-from datetime import date
 from decimal import Decimal
 from typing import Annotated
 
@@ -10,14 +9,6 @@ from ksef2.domain.models.base import KSeFBaseModel
 from ksef2.domain.models.fa3.body import KsefInvoiceBody
 from ksef2.domain.models.fa3.header import InvoiceHeader
 from ksef2.domain.models.fa3.party import InvoiceEntity
-
-
-class InvoiceDetails(KSeFBaseModel):
-    """Minimal invoice details needed by the public FA(3) layer."""
-
-    invoice_number: str
-    issue_date: date
-    currency: str = "PLN"
 
 
 class KsefInvoice(KSeFBaseModel):
