@@ -1,147 +1,163 @@
-from typing import Any
-
 import pytest
+from datetime import date, datetime, timezone
+from decimal import Decimal
 from xsdata.formats.dataclass.parsers import XmlParser
 
-from ksef2.domain.models.fa3.body import InvoicePayment, InvoiceType, KsefInvoiceBody
+from ksef2.domain.models.fa3.body import InvoiceRow, InvoiceSummaryOverrides, VatRate
 from ksef2.infra.mappers.invoices.fa3.spec.invoice import (
     from_spec as invoice_from_spec,
 )
 from ksef2.infra.schema.fa3.models.schemat import Faktura
-from tests.integration.builders.helpers import load_sample
+from tests.integration.builders.helpers import load_sample, sample_path
 from ksef2.services.builders.fa3.root import StandardInvoiceBuilder
 
 
-SIMPLIFIED_SAMPLES = [
-    "FA_3_Przykład_15.xml",
-    "FA_3_Przykład_16.xml",
-    "KSEF_04_UPR.xml",
-]
-
-
-def _has_payment(payment: InvoicePayment) -> bool:
-    return any(
-        [
-            payment.paid,
-            payment.payment_date,
-            payment.partial_payment_status,
-            payment.partial_payments,
-            payment.payment_terms,
-            payment.payment_form,
-            payment.other_payment_form,
-            payment.payment_description,
-            payment.bank_accounts,
-            payment.factor_bank_accounts,
-            payment.discount_terms,
-            payment.discount_amount,
-            payment.payment_link,
-            payment.ipksef,
-        ]
+def _assert_sample(builder: StandardInvoiceBuilder, sample_name: str) -> None:
+    parser = XmlParser()
+    expected = load_sample(sample_path(sample_name))
+    actual = builder.to_spec()
+    actual_invoice = invoice_from_spec(actual)
+    expected_invoice = invoice_from_spec(expected)
+    xml_invoice = invoice_from_spec(
+        parser.from_bytes(builder.to_xml().encode("utf-8"), Faktura)
     )
 
-
-def _apply_body(builder: Any, body: KsefInvoiceBody) -> None:
-    builder.currency(body.currency)
-    builder.issue_date(body.issue_date)
-    builder.issue_place(body.issue_place)
-    builder.invoice_number(body.invoice_number)
-    for document in body.warehouse_documents:
-        builder.add_warehouse_document(document)
-    if body.date_of_supply is not None:
-        builder.date_of_supply(body.date_of_supply)
-    if body.period_start is not None or body.period_end is not None:
-        builder.billing_period(
-            period_start=body.period_start,
-            period_end=body.period_end,
-        )
-    if body.vat_currency_exchange_rate is not None:
-        builder.vat_currency_exchange_rate(body.vat_currency_exchange_rate)
-    if body.fp_invoice:
-        builder.mark_fp()
-    if body.related_party_transaction:
-        builder.related_party_transaction()
-    if body.return_of_excise is not None:
-        builder.return_of_excise(body.return_of_excise)
-    for entry in body.additional_description:
-        builder.add_description(
-            key=entry.key,
-            value=entry.value,
-            row_number=entry.row_number,
-        )
-    if hasattr(builder, "rows") and body.rows:
-        builder.rows().from_model(body.rows).done()
-    if hasattr(builder, "order") and body.order is not None:
-        builder.order().from_model(body.order).done()
-    if (
-        hasattr(builder, "payment")
-        and body.payment is not None
-        and _has_payment(body.payment)
-    ):
-        builder.payment().from_model(body.payment).done()
-    if hasattr(builder, "annotations") and body.annotations is not None:
-        builder.annotations().from_model(body.annotations).done()
-    if hasattr(builder, "transaction") and body.transaction_conditions is not None:
-        builder.transaction().from_model(body.transaction_conditions).done()
-    if hasattr(builder, "settlement") and body.settlement is not None:
-        builder.settlement().from_model(body.settlement).done()
-    if hasattr(builder, "correction") and body.correction is not None:
-        builder.correction().from_model(body.correction).done()
-    if hasattr(builder, "advance") and body.advance is not None:
-        builder.advance().from_model(body.advance).done()
-
-
-def _select_body_builder(
-    builder: StandardInvoiceBuilder,
-    invoice_type: InvoiceType,
-) -> Any:
-    if invoice_type == InvoiceType.VAT:
-        return builder.standard()
-    if invoice_type == InvoiceType.UPR:
-        return builder.simplified()
-    if invoice_type == InvoiceType.CORRECTING:
-        return builder.correction()
-    if invoice_type == InvoiceType.ZAL:
-        return builder.advance()
-    if invoice_type == InvoiceType.ROZ:
-        return builder.settlement()
-    if invoice_type == InvoiceType.CORRECTING_ZAL:
-        return builder.correction_advance()
-    if invoice_type == InvoiceType.CORRECTING_ROZ:
-        return builder.correction_settlement()
-    raise ValueError(f"Unsupported invoice type: {invoice_type}")
-
-
-def _build_from_sample(sample_name: str) -> StandardInvoiceBuilder:
-    faktura = load_sample(sample_name)
-    invoice = invoice_from_spec(faktura)
-    builder = StandardInvoiceBuilder()
-    builder.header_model(invoice.header)
-    builder.seller_model(invoice.seller)
-    builder.buyer_model(invoice.buyer)
-    for party in invoice.third_parties:
-        builder.add_third_party_model(party)
-    if invoice.footer is not None:
-        builder.footer_model(invoice.footer)
-    if invoice.attachment is not None:
-        builder.attachment_model(invoice.attachment)
-    body_builder = _select_body_builder(builder, invoice.body.invoice_type)
-    _apply_body(body_builder, invoice.body)
-    body_builder.done()
-    return builder
-
-
-def _assert_sample(sample_name: str) -> None:
-    parser = XmlParser()
-    expected = load_sample(sample_name)
-    builder = _build_from_sample(sample_name)
-    actual = builder.to_spec()
-    expected = normalize_expected(expected, actual)
-
-    assert actual == expected
-    assert parser.from_bytes(builder.to_xml().encode("utf-8"), Faktura) == expected
+    assert actual.fa.p_2 == expected.fa.p_2
+    assert Decimal(actual.fa.p_15) == Decimal(expected.fa.p_15)
+    assert len(actual.fa.fa_wiersz) == len(expected.fa.fa_wiersz)
+    assert actual_invoice == expected_invoice
+    assert xml_invoice == expected_invoice
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize("sample_name", SIMPLIFIED_SAMPLES)
-def test_new_fa3_simplified_samples(sample_name: str) -> None:
-    _assert_sample(sample_name)
+def test_new_fa3_simplified_sample_15() -> None:
+    builder = StandardInvoiceBuilder()
+    _ = (
+        builder.header(
+            generation_timestamp=datetime(2026, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
+            system_info="SamploFaktur",
+        )
+        .seller(
+            name="ABC AGD sp. z o. o.",
+            tax_id="9999999999",
+            country_code="PL",
+            address_line_1="ul. Kwiatowa 1 m. 2",
+            address_line_2="00-001 Warszawa",
+            email="abc@abc.pl",
+            phone="667444555",
+        )
+        .buyer(name=None, tax_id="1111111111", country_code=None, address_line_1=None)
+    )
+    _ = (
+        builder.footer()
+        .add_information("Kapiał zakładowy 5 000 000")
+        .add_registry(krs="0000099999", regon="999999999", bdo="000099999")
+        .done()
+    )
+    _ = (
+        builder.simplified()
+        .issue_date(date(2026, 2, 15))
+        .invoice_number("FV2026/02/150")
+        .date_of_supply(date(2026, 1, 3))
+        .summary_overrides(
+            InvoiceSummaryOverrides(
+                base_rate_net_total=Decimal("365.85"),
+                base_rate_vat_total=Decimal("84.15"),
+                total_gross=Decimal("450"),
+            )
+        )
+        .rows()
+        .add_line_model(InvoiceRow(name="wiertarka Wiertex mk5"))
+        .done()
+        .done()
+    )
+
+    _assert_sample(builder, "FA_3_Przykład_15.xml")
+
+
+@pytest.mark.integration
+def test_new_fa3_simplified_sample_16() -> None:
+    builder = StandardInvoiceBuilder()
+    _ = (
+        builder.header(
+            generation_timestamp=datetime(2026, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
+            system_info="SamploFaktur",
+        )
+        .seller(
+            name="ABC AGD sp. z o. o.",
+            tax_id="9999999999",
+            country_code="PL",
+            address_line_1="ul. Kwiatowa 1 m. 2",
+            address_line_2="00-001 Warszawa",
+            email="abc@abc.pl",
+            phone="667444555",
+        )
+        .buyer(name=None, tax_id="1111111111", country_code=None, address_line_1=None)
+    )
+    _ = (
+        builder.footer()
+        .add_information("Kapiał zakładowy 5 000 000")
+        .add_registry(krs="0000099999", regon="999999999", bdo="000099999")
+        .done()
+    )
+    _ = (
+        builder.simplified()
+        .issue_date(date(2026, 2, 15))
+        .invoice_number("FV2026/02/150")
+        .date_of_supply(date(2026, 1, 3))
+        .summary_overrides(InvoiceSummaryOverrides(total_gross=Decimal("450")))
+        .rows()
+        .add_line_model(
+            InvoiceRow(name="wiertarka Wiertex mk5", vat_rate=VatRate.VAT_23)
+        )
+        .done()
+        .done()
+    )
+
+    _assert_sample(builder, "FA_3_Przykład_16.xml")
+
+
+@pytest.mark.integration
+def test_new_fa3_simplified_sample_ksef_04_upr() -> None:
+    builder = StandardInvoiceBuilder()
+    _ = (
+        builder.header(
+            generation_timestamp=datetime(2025, 12, 5, 11, 30, 0, tzinfo=timezone.utc),
+            system_info="KSEF_TEST_SUITE",
+        )
+        .seller(
+            name="SKLEP NAROZNY sp. z o.o.",
+            tax_id="9999999999",
+            country_code="PL",
+            address_line_1="ul. Handlowa 15",
+            address_line_2="00-400 Warszawa",
+            email="sklep@narozny.pl",
+            phone="+48223334455",
+        )
+        .buyer(name=None, tax_id="1111111111", country_code=None, address_line_1=None)
+    )
+    _ = (
+        builder.footer()
+        .add_information("SKLEP NAROZNY sp. z o.o.")
+        .add_registry(regon="111222333")
+        .done()
+    )
+    _ = (
+        builder.simplified()
+        .issue_date(date(2025, 12, 5))
+        .invoice_number("FU/2025/12/0001")
+        .date_of_supply(date(2025, 12, 5))
+        .summary_overrides(
+            InvoiceSummaryOverrides(
+                base_rate_net_total=Decimal("300.00"),
+                base_rate_vat_total=Decimal("69.00"),
+                total_gross=Decimal("369"),
+            )
+        )
+        .rows()
+        .add_line_model(InvoiceRow(name="Artykuly biurowe (zestaw)"))
+        .done()
+        .done()
+    )
+
+    _assert_sample(builder, "KSEF_04_UPR.xml")
