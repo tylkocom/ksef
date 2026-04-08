@@ -93,6 +93,4 @@ class FooterBuilderMixin:
         return FooterBuilder(self, self._set_footer, self._footer)
 
     def _set_footer(self, value: InvoiceFooter) -> None:
-        if self._footer is not None:
-            raise ValueError("Footer has already been set")
         self._footer = value

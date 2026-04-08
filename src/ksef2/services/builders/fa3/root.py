@@ -6,7 +6,7 @@ from typing import Self, override
 from xsdata.formats.dataclass.serializers import XmlSerializer
 from xsdata.formats.dataclass.serializers.config import SerializerConfig
 
-from ksef2.domain.models.fa3 import Attachment, InvoiceFooter
+from ksef2.domain.models.fa3 import Attachment, InvoiceFooter, KsefInvoiceDraft
 from ksef2.domain.models.fa3.body.root import KsefInvoiceBody
 from ksef2.domain.protocols import BaseBuilderProtocol
 from ksef2.domain.models.fa3.header import InvoiceHeader
@@ -288,9 +288,52 @@ class StandardInvoiceBuilder(
         return CorrectionSettlementBodyBuilder(self, self._set_body, self._body)
 
     def _set_body(self, body: KsefInvoiceBody) -> None:
-        if self._body is not None:
-            raise ValueError("Invoice body has already been set")
         self._body = body
+
+    def dump_state(self) -> KsefInvoiceDraft:
+        return KsefInvoiceDraft(
+            header=self._header.model_copy(deep=True) if self._header else None,
+            seller=self._seller.model_copy(deep=True) if self._seller else None,
+            buyer=self._buyer.model_copy(deep=True) if self._buyer else None,
+            third_parties=[
+                third_party.model_copy(deep=True)
+                for third_party in (self._third_parties or [])
+            ],
+            body=self._body.model_copy(deep=True) if self._body else None,
+            footer=self._footer.model_copy(deep=True) if self._footer else None,
+            attachment=(
+                self._attachment.model_copy(deep=True) if self._attachment else None
+            ),
+        )
+
+    def dump_state_json(self, *, indent: int | None = None) -> str:
+        return self.dump_state().model_dump_json(indent=indent)
+
+    def load_state(self, state: KsefInvoiceDraft) -> Self:
+        self._header = state.header.model_copy(deep=True) if state.header else None
+        self._seller = state.seller.model_copy(deep=True) if state.seller else None
+        self._buyer = state.buyer.model_copy(deep=True) if state.buyer else None
+        self._third_parties = [
+            third_party.model_copy(deep=True) for third_party in state.third_parties
+        ]
+        self._body = state.body.model_copy(deep=True) if state.body else None
+        self._footer = state.footer.model_copy(deep=True) if state.footer else None
+        self._attachment = (
+            state.attachment.model_copy(deep=True) if state.attachment else None
+        )
+        return self
+
+    @classmethod
+    def from_state(cls, state: KsefInvoiceDraft) -> Self:
+        return cls().load_state(state)
+
+    @classmethod
+    def from_state_json(cls, data: str | bytes | bytearray) -> Self:
+        return cls.from_state(KsefInvoiceDraft.model_validate_json(data))
+
+    @classmethod
+    def from_invoice(cls, invoice: KsefInvoice) -> Self:
+        return cls.from_state(KsefInvoiceDraft.from_invoice(invoice))
 
     def build(self) -> KsefInvoice:
         if self._header is None:

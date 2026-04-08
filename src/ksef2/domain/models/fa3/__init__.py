@@ -5,6 +5,7 @@ from ksef2.domain.models.fa3.attachment import (
 )
 from ksef2.domain.models.fa3.invoice import (
     KsefInvoice,
+    KsefInvoiceDraft,
 )
 from ksef2.domain.models.fa3.footer import (
     FooterRegistry,
@@ -84,6 +85,7 @@ __all__ = [
     "InvoiceHeader",
     "KsefInvoiceBody",
     "KsefInvoice",
+    "KsefInvoiceDraft",
     "MarginProcedure",
     "NewTransportMeansItem",
     "NewTransportSupply",

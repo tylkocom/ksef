@@ -194,6 +194,4 @@ class TransactionBuilderMixin:
         )
 
     def _set_transaction(self, value: TransactionConditions) -> None:
-        if self._transaction_conditions is not None:
-            raise ValueError("Transaction conditions have already been set")
         self._transaction_conditions = value

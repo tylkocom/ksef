@@ -5,8 +5,7 @@ from pathlib import Path
 
 from lxml import etree
 
-from ksef2.domain.models.fa3.body import VatRate
-from ksef2.services import FA3InvoiceBuilder
+from ksef2.fa3 import FA3InvoiceBuilder, VatRate
 from ksef2.services.renderers import InvoicePDFExporter
 
 _MARKER = "pyproject.toml"
@@ -26,13 +25,8 @@ class ExampleConfig:
     schema_path: Path = repo_root() / "schemas" / "FA3" / "schemat.xsd"
 
 
-builder = FA3InvoiceBuilder()
-
-
-invoice = builder.header(system_info="ksef2 example builder")
-
-
-def build_invoice():
+def build_invoice_builder() -> FA3InvoiceBuilder:
+    builder = FA3InvoiceBuilder()
     return (
         builder.header(system_info="ksef2 example builder")
         .seller(
@@ -48,29 +42,32 @@ def build_invoice():
             address_line_1="Unter den Linden 1",
             address_line_2="10115 Berlin",
         )
+        .standard()
+        .issue_place("Warszawa")
+        .issue_date(date(2026, 3, 29))
+        .invoice_number("FV/2026/03/0001")
+        .billing_period(
+            period_start=date(2026, 3, 1),
+            period_end=date(2026, 3, 31),
+        )
+        .rows()
         .add_line(
             name="Consulting service",
             supply_date=date(2026, 3, 29),
             unit_of_measure="h",
             quantity=Decimal("10"),
             unit_price_net=Decimal("100.00"),
-            discount_amount=Decimal("0.00"),
-            net_amount=Decimal("1000.00"),
             vat_rate=VatRate.VAT_23,
         )
-        .body(
-            issue_place="Warszawa",
-            issue_date=date(2026, 3, 29),
-            period_start=date(2026, 3, 1),
-            period_end=date(2026, 3, 31),
-        )
+        .done()
         .payment()
         .via("bank_transfer")
         .due_on(date(2026, 4, 12))
-        .to_bank_account("PL10101010101010101010101010")
+        .bank_account("PL10101010101010101010101010")
         .done()
         .annotations()
         .split_payment()
+        .done()
         .done()
     )
 
@@ -90,9 +87,9 @@ def export_invoice_pdf(xml_path: Path, pdf_output_path: Path) -> Path:
 
 
 def run(config: ExampleConfig) -> tuple[Path, Path]:
-    invoice_xml = build_invoice().to_xml()
+    invoice_xml = build_invoice_builder().to_xml()
     config.output_path.parent.mkdir(parents=True, exist_ok=True)
-    config.output_path.write_text(invoice_xml, encoding="utf-8")
+    _ = config.output_path.write_text(invoice_xml, encoding="utf-8")
     validate_invoice_xml(config.output_path, config.schema_path)
     exported_pdf_path = export_invoice_pdf(config.output_path, config.pdf_output_path)
     print(f"Saved FA(3) invoice XML to: {config.output_path}")
@@ -102,7 +99,7 @@ def run(config: ExampleConfig) -> tuple[Path, Path]:
 
 
 def main() -> int:
-    run(ExampleConfig())
+    _ = run(ExampleConfig())
     return 0
 
 

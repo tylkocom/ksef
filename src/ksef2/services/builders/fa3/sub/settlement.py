@@ -116,6 +116,4 @@ class SettlementBuilderMixin:
         return SettlementBuilder(self, self._set_settlement, self._settlement)
 
     def _set_settlement(self, value: InvoiceSettlement) -> None:
-        if self._settlement is not None:
-            raise ValueError("Settlement has already been set")
         self._settlement = value

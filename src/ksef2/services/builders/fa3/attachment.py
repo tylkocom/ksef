@@ -121,7 +121,7 @@ class AttachmentTableBuilder:
 class DataBlockBuilder:
     def __init__(
         self,
-        parent: "AttachmentBuilder | None" = None,
+        parent: "AttachmentBuilder[object] | None" = None,
         existing_state: DataBlock | None = None,
     ) -> None:
         self._parent = parent
@@ -197,7 +197,7 @@ class DataBlockBuilder:
             and not self._tables
         )
 
-    def done(self) -> "AttachmentBuilder":
+    def done(self) -> "AttachmentBuilder[object]":
         if self._parent is None:
             raise ValueError(
                 "DataBlockBuilder must have a parent AttachmentBuilder to call done()."
@@ -258,8 +258,6 @@ class AttachmentBuilder[TParent]:
             raise ValueError(
                 "Attachment details are empty. Add at least one data block before calling done()."
             )
-        if getattr(self._parent, "_attachment", None) is not None:
-            raise ValueError("Attachment is already set.")
         self._on_done(self.build())
         return self._parent
 
@@ -271,6 +269,4 @@ class AttachmentBuilderMixin:
         return AttachmentBuilder(self, self._set_attachment, self._attachment)
 
     def _set_attachment(self, attachment: Attachment) -> None:
-        if self._attachment is not None:
-            raise ValueError("Attachment is already set.")
         self._attachment = attachment

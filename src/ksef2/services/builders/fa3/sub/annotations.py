@@ -235,6 +235,4 @@ class AnnotationsBuilderMixin:
         return AnnotationsBuilder(self, self._set_annotations, self._annotations)
 
     def _set_annotations(self, value: InvoiceAnnotationsContext) -> None:
-        if self._annotations is not None:
-            raise ValueError("Annotations have already been set")
         self._annotations = value

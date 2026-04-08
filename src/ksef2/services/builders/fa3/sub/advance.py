@@ -133,6 +133,4 @@ class AdvanceBuilderMixin:
         return AdvanceBuilder(self, self._set_advance, self._advance)
 
     def _set_advance(self, value: AdvancePaymentInvoiceContext) -> None:
-        if self._advance is not None:
-            raise ValueError("Advance details have already been set")
         self._advance = value

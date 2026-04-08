@@ -14,5 +14,7 @@ uv run -m scripts.examples.quickstart
 uv run -m scripts.examples.invoices.send_invoice
 uv run -m scripts.examples.invoices.send_batch
 uv run -m scripts.examples.invoices.submit_batch
+uv run -m scripts.examples.invoices.build_fa3_invoice
+uv run -m scripts.examples.invoices.build_fa3_invoice_builder
 uv run -m scripts.examples.scenarios.download_purchase_invoices
 ```

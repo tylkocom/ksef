@@ -208,9 +208,7 @@ class CorrectionBuilderMixin:
     _correction: CorrectionInvoiceContext | None = None
 
     def correction(self) -> CorrectionBuilder[Self]:
-        return CorrectionBuilder(self, self._set_correction)
+        return CorrectionBuilder(self, self._set_correction, self._correction)
 
     def _set_correction(self, value: CorrectionInvoiceContext) -> None:
-        if self._correction is not None:
-            raise ValueError("Correction has already been set")
         self._correction = value

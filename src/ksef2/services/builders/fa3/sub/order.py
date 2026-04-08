@@ -167,6 +167,4 @@ class OrderBuilderMixin:
         )
 
     def _set_order(self, value: InvoiceOrder) -> None:
-        if self._order is not None:
-            raise ValueError("Order has already been set")
         self._order = value

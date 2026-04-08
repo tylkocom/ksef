@@ -9,6 +9,7 @@ This directory contains the maintained human-facing documentation for the curren
 | [Authentication](guides/authentication.md) | XAdES auth, KSeF token auth, refresh, auth-session management |
 | [Encryption](guides/encryption.md) | Public KSeF encryption certificates used for token and session encryption |
 | [Invoices](guides/invoices.md) | Sending invoices, session invoice status, metadata queries, exports, downloads |
+| [FA(3) Builder](guides/fa3-builder.md) | Building typed FA(3) invoices and rendering XML through `ksef2.fa3` |
 | [Sessions](guides/sessions.md) | Online session lifecycle, session resume, invoice session history |
 | [Tokens](guides/tokens.md) | Generating, listing, checking, and revoking KSeF tokens |
 | [Permissions](guides/permissions.md) | Grant, revoke, query, and operation-status flows |

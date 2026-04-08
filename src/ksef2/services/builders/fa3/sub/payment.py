@@ -290,9 +290,7 @@ class PaymentBuilderMixin:
     _payment: InvoicePayment | None = None
 
     def payment(self) -> PaymentBuilder[Self]:
-        return PaymentBuilder(self, self._set_payment)
+        return PaymentBuilder(self, self._set_payment, self._payment)
 
     def _set_payment(self, value: InvoicePayment) -> None:
-        if self._payment is not None:
-            raise ValueError("Payment has already been set")
         self._payment = value
