@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from ksef2.domain.models.fa3 import (
     CorrectedBuyerEntity,
+    CorrectedInvoiceReference,
     CorrectedSellerEntity,
     InvoiceAddress,
     InvoiceAnnotationsContext,
@@ -15,11 +16,13 @@ from ksef2.domain.models.fa3 import (
 from ksef2.domain.models.fa3.body import (
     AdvancePaymentInvoiceContext,
     InvoiceRow,
-    PartialAdvancePayment,
+    AdditionalDescriptionEntry,
+    InvoiceType,
     NewTransportMeansItem,
     NewTransportSupply,
-    AdditionalDescriptionEntry,
+    PartialAdvancePayment,
     TaxRegime,
+    VatRate,
 )
 from ksef2.domain.models.fa3.body import CorrectionInvoiceContext
 from ksef2.domain.models.fa3.body.payment import InvoicePayment
@@ -69,6 +72,7 @@ def test_invoice_to_spec_assembles_root_faktura() -> None:
             ),
             body=KsefInvoiceBody(
                 issue_date=date(2026, 3, 29),
+                issue_place=None,
                 invoice_number="FV/1/2026",
                 rows=[
                     InvoiceRow(
@@ -79,7 +83,7 @@ def test_invoice_to_spec_assembles_root_faktura() -> None:
                         unit_price_gross=Decimal("123.00"),
                         net_amount=Decimal("1000.00"),
                         gross_amount=Decimal("1230.00"),
-                        vat_rate="23",
+                        vat_rate=VatRate.VAT_23,
                         annex_15_marker=True,
                         gtu_code="GTU_12",
                         procedure="TT_D",
@@ -93,7 +97,7 @@ def test_invoice_to_spec_assembles_root_faktura() -> None:
                         quantity=Decimal("5"),
                         unit_price_net=Decimal("50.00"),
                         net_amount=Decimal("250.00"),
-                        vat_rate="23",
+                        vat_rate=VatRate.VAT_23,
                         vat_amount=Decimal("57.50"),
                     ),
                 ],
@@ -148,7 +152,9 @@ def test_invoice_to_spec_assembles_root_faktura() -> None:
     assert output.fa.fa_wiersz[0].p_11_vat == "230.00"
     assert output.fa.fa_wiersz[0].p_12 == TstawkaPodatku.VALUE_23
     assert output.fa.fa_wiersz[0].p_12_zal_15 == Twybor1.VALUE_1
+    assert output.fa.fa_wiersz[0].gtu is not None
     assert output.fa.fa_wiersz[0].gtu.name == "GTU_12"
+    assert output.fa.fa_wiersz[0].procedura is not None
     assert output.fa.fa_wiersz[0].procedura.name == "TT_D"
     assert output.fa.fa_wiersz[0].kurs_waluty == "4.123456"
     assert output.fa.fa_wiersz[0].stan_przed == Twybor1.VALUE_1
@@ -162,6 +168,7 @@ def test_invoice_to_spec_assembles_root_faktura() -> None:
     assert output.fa.dodatkowy_opis[0].wartosc == "A-2026-04"
     assert output.fa.warunki_transakcji is not None
     assert len(output.fa.warunki_transakcji.transport) == 1
+    assert output.fa.warunki_transakcji.transport[0].rodzaj_transportu is not None
     assert output.fa.warunki_transakcji.transport[0].rodzaj_transportu.name == "VALUE_3"
     assert output.fa.adnotacje.p_16 == Twybor12.VALUE_2
     assert output.fa.adnotacje.p_17 == Twybor12.VALUE_2
@@ -194,19 +201,20 @@ def test_invoice_to_spec_maps_correction_party_blocks() -> None:
             ),
             body=KsefInvoiceBody(
                 issue_date=date(2026, 3, 29),
+                issue_place=None,
                 invoice_number="FK/1/2026",
-                invoice_type="Faktura korygująca",
+                invoice_type=InvoiceType.CORRECTING,
                 correction=CorrectionInvoiceContext(
                     correction_reason="Buyer data correction",
                     correction_effect_type="other_date",
                     corrected_invoice_period="March 2026",
                     corrected_invoice_number_override="FV/1/2026/OK",
                     corrected_invoices=[
-                        {
-                            "issue_date": "2026-03-01",
-                            "invoice_number": "FV/1/2026",
-                            "ksef_id": "1234567890-20260301-ABCDEF-ABCDEF-FF",
-                        }
+                        CorrectedInvoiceReference(
+                            issue_date=date(2026, 3, 1),
+                            invoice_number="FV/1/2026",
+                            ksef_id="1234567890-20260301-ABCDEF-ABCDEF-FF",
+                        )
                     ],
                     corrected_seller=CorrectedSellerEntity(
                         vat_prefix="DE",
@@ -228,7 +236,7 @@ def test_invoice_to_spec_maps_correction_party_blocks() -> None:
                         quantity=Decimal("1"),
                         unit_price_net=Decimal("100.00"),
                         net_amount=Decimal("100.00"),
-                        vat_rate="23",
+                        vat_rate=VatRate.VAT_23,
                         vat_amount=Decimal("23.00"),
                     )
                 ],
@@ -237,12 +245,15 @@ def test_invoice_to_spec_maps_correction_party_blocks() -> None:
     )
 
     assert output.fa.podmiot1_k is not None
+    assert output.fa.typ_korekty is not None
     assert output.fa.typ_korekty.name == "VALUE_3"
     assert output.fa.okres_fa_korygowanej == "March 2026"
     assert output.fa.nr_fa_korygowany == "FV/1/2026/OK"
+    assert output.fa.podmiot1_k.prefiks_podatnika is not None
     assert output.fa.podmiot1_k.prefiks_podatnika.name == "DE"
     assert output.fa.podmiot1_k.dane_identyfikacyjne.nazwa == "Old Seller Sp. z o.o."
     assert len(output.fa.podmiot2_k) == 1
+    assert output.fa.podmiot2_k[0].dane_identyfikacyjne.kod_ue is not None
     assert output.fa.podmiot2_k[0].dane_identyfikacyjne.kod_ue.name == "DE"
     assert output.fa.podmiot2_k[0].dane_identyfikacyjne.nr_vat_ue == "123456789"
     assert output.fa.podmiot2_k[0].idnabywcy == "BUYER-1"
@@ -270,6 +281,7 @@ def test_invoice_to_spec_maps_foreign_currency_vat_and_annotations() -> None:
             body=KsefInvoiceBody(
                 currency="EUR",
                 issue_date=date(2026, 3, 29),
+                issue_place=None,
                 invoice_number="FV/2/2026",
                 vat_currency_exchange_rate=Decimal("4.500000"),
                 annotations=InvoiceAnnotationsContext(
@@ -302,7 +314,7 @@ def test_invoice_to_spec_maps_foreign_currency_vat_and_annotations() -> None:
                         quantity=Decimal("1"),
                         unit_price_net=Decimal("100.00"),
                         net_amount=Decimal("100.00"),
-                        vat_rate="23",
+                        vat_rate=VatRate.VAT_23,
                         vat_amount=Decimal("23.00"),
                     ),
                     InvoiceRow(
@@ -310,7 +322,7 @@ def test_invoice_to_spec_maps_foreign_currency_vat_and_annotations() -> None:
                         quantity=Decimal("1"),
                         unit_price_net=Decimal("100.00"),
                         net_amount=Decimal("100.00"),
-                        vat_rate="8",
+                        vat_rate=VatRate.VAT_8,
                         vat_amount=Decimal("8.00"),
                     ),
                     InvoiceRow(
@@ -318,7 +330,7 @@ def test_invoice_to_spec_maps_foreign_currency_vat_and_annotations() -> None:
                         quantity=Decimal("1"),
                         unit_price_net=Decimal("100.00"),
                         net_amount=Decimal("100.00"),
-                        vat_rate="5",
+                        vat_rate=VatRate.VAT_5,
                         vat_amount=Decimal("5.00"),
                     ),
                     InvoiceRow(
@@ -326,7 +338,7 @@ def test_invoice_to_spec_maps_foreign_currency_vat_and_annotations() -> None:
                         quantity=Decimal("1"),
                         unit_price_net=Decimal("100.00"),
                         net_amount=Decimal("100.00"),
-                        vat_rate="4",
+                        vat_rate=VatRate.VAT_4,
                         vat_amount=Decimal("4.00"),
                         tax_regime=TaxRegime.TAXI_FLAT_RATE,
                     ),
@@ -382,8 +394,9 @@ def test_invoice_to_spec_maps_advance_before_correction_and_partial_payments() -
             body=KsefInvoiceBody(
                 currency="EUR",
                 issue_date=date(2026, 3, 29),
+                issue_place=None,
                 invoice_number="FKZ/1/2026",
-                invoice_type="Faktura korygująca fakturę dokumentującą otrzymanie zapłaty lub jej części przed dokonaniem czynności oraz fakturę wystawioną w związku z art. 106f ust. 4 ustawy (faktura korygująca fakturę zaliczkową)",
+                invoice_type=InvoiceType.CORRECTING_ZAL,
                 advance=AdvancePaymentInvoiceContext(
                     amount_before_correction=Decimal("1200.50"),
                     currency_exchange_rate_before_correction=Decimal("4.450001"),
@@ -401,7 +414,7 @@ def test_invoice_to_spec_maps_advance_before_correction_and_partial_payments() -
                         quantity=Decimal("1"),
                         unit_price_net=Decimal("100.00"),
                         net_amount=Decimal("100.00"),
-                        vat_rate="23",
+                        vat_rate=VatRate.VAT_23,
                         vat_amount=Decimal("23.00"),
                     )
                 ],

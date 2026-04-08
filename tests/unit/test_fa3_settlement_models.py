@@ -7,11 +7,13 @@ from pydantic import ValidationError
 from ksef2.domain.models.fa3 import AdvanceInvoiceReference
 from ksef2.domain.models.fa3.body import (
     AdvancePaymentInvoiceContext,
+    InvoiceType,
     InvoiceRow,
     InvoiceSettlement,
     KsefInvoiceBody,
     SettlementCharge,
     SettlementDeduction,
+    VatRate,
 )
 
 
@@ -21,7 +23,7 @@ def make_invoice_line() -> InvoiceRow:
         quantity=Decimal("1"),
         unit_price_net=Decimal("1000.00"),
         net_amount=Decimal("1000.00"),
-        vat_rate="23",
+        vat_rate=VatRate.VAT_23,
         vat_amount=Decimal("230.00"),
     )
 
@@ -52,8 +54,9 @@ def test_invoice_settlement_rejects_conflicting_balance_fields() -> None:
 def test_invoice_body_combines_settlement_and_advance_reference_deductions() -> None:
     body = KsefInvoiceBody(
         issue_date=date(2026, 3, 29),
+        issue_place=None,
         invoice_number="FR/1/2026",
-        invoice_type="Faktura wystawiona w związku z art. 106f ust. 3 ustawy",
+        invoice_type=InvoiceType.ROZ,
         rows=[make_invoice_line()],
         settlement=InvoiceSettlement(
             charges=[

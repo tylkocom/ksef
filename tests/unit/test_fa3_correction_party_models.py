@@ -1,8 +1,13 @@
+from datetime import date
+from decimal import Decimal
+
 import pytest
 from pydantic import ValidationError
 
 from ksef2.domain.models.fa3 import (
+    AdvanceInvoiceReference,
     CorrectedBuyerEntity,
+    CorrectedInvoiceReference,
     CorrectedSellerEntity,
     InvoiceAddress,
 )
@@ -12,6 +17,7 @@ from ksef2.domain.models.fa3.body import (
     InvoiceType,
     KsefInvoiceBody,
     InvoiceRow,
+    VatRate,
 )
 
 
@@ -26,11 +32,11 @@ def make_polish_address() -> InvoiceAddress:
 def make_invoice_line() -> InvoiceRow:
     return InvoiceRow(
         name="Consulting service",
-        quantity="1",
-        unit_price_net="100.00",
-        net_amount="100.00",
-        vat_rate="23",
-        vat_amount="23.00",
+        quantity=Decimal("1"),
+        unit_price_net=Decimal("100.00"),
+        net_amount=Decimal("100.00"),
+        vat_rate=VatRate.VAT_23,
+        vat_amount=Decimal("23.00"),
     )
 
 
@@ -58,7 +64,8 @@ def test_corrected_buyer_entity_rejects_no_id_with_identifiers() -> None:
 def test_invoice_body_rejects_correction_parties_on_non_correcting_invoice() -> None:
     with pytest.raises(ValidationError, match="only valid for correcting invoices"):
         KsefInvoiceBody(
-            issue_date="2026-03-29",
+            issue_date=date(2026, 3, 29),
+            issue_place=None,
             invoice_number="FV/1/2026",
             rows=[make_invoice_line()],
             correction=CorrectionInvoiceContext(
@@ -74,7 +81,8 @@ def test_invoice_body_rejects_correction_parties_on_non_correcting_invoice() -> 
 def test_invoice_body_rejects_correction_context_on_non_correcting_invoice() -> None:
     with pytest.raises(ValidationError, match="correction is only valid"):
         KsefInvoiceBody(
-            issue_date="2026-03-29",
+            issue_date=date(2026, 3, 29),
+            issue_place=None,
             invoice_number="FV/1/2026",
             rows=[make_invoice_line()],
             correction=CorrectionInvoiceContext(
@@ -85,7 +93,8 @@ def test_invoice_body_rejects_correction_context_on_non_correcting_invoice() -> 
 
 def test_invoice_body_accepts_correction_parties_on_correcting_invoice() -> None:
     body = KsefInvoiceBody(
-        issue_date="2026-03-29",
+        issue_date=date(2026, 3, 29),
+        issue_place=None,
         invoice_number="FK/1/2026",
         invoice_type=InvoiceType.CORRECTING,
         rows=[make_invoice_line()],
@@ -94,11 +103,11 @@ def test_invoice_body_accepts_correction_parties_on_correcting_invoice() -> None
             corrected_invoice_period="2026-03",
             corrected_invoice_number_override="FV/1/2026/CORR",
             corrected_invoices=[
-                {
-                    "issue_date": "2026-03-01",
-                    "invoice_number": "FV/1/2026",
-                    "ksef_id": "1234567890-20260301-ABCDEF-ABCDEF-FF",
-                }
+                CorrectedInvoiceReference(
+                    issue_date=date(2026, 3, 1),
+                    invoice_number="FV/1/2026",
+                    ksef_id="1234567890-20260301-ABCDEF-ABCDEF-FF",
+                )
             ],
             corrected_buyers=[
                 CorrectedBuyerEntity(
@@ -120,19 +129,20 @@ def test_invoice_body_accepts_correction_parties_on_correcting_invoice() -> None
 
 def test_invoice_body_accepts_advance_context() -> None:
     body = KsefInvoiceBody(
-        issue_date="2026-03-29",
+        issue_date=date(2026, 3, 29),
+        issue_place=None,
         invoice_number="FR/1/2026",
-        invoice_type="Faktura wystawiona w związku z art. 106f ust. 3 ustawy",
+        invoice_type=InvoiceType.ROZ,
         rows=[make_invoice_line()],
         advance=AdvancePaymentInvoiceContext(
-            amount_before_correction="1500.45",
-            currency_exchange_rate_before_correction="4.501234",
+            amount_before_correction=Decimal("1500.45"),
+            currency_exchange_rate_before_correction=Decimal("4.501234"),
             advance_invoice_references=[
-                {
-                    "ksef_id": "1234567890-20260301-ABCDEF-ABCDEF-FF",
-                    "deduction_amount": "500.00",
-                    "deduction_reason": "Rozliczenie faktury zaliczkowej nr 1",
-                }
+                AdvanceInvoiceReference(
+                    ksef_id="1234567890-20260301-ABCDEF-ABCDEF-FF",
+                    deduction_amount=Decimal("500.00"),
+                    deduction_reason="Rozliczenie faktury zaliczkowej nr 1",
+                )
             ],
         ),
     )
@@ -146,10 +156,11 @@ def test_invoice_body_accepts_advance_context() -> None:
 def test_invoice_body_rejects_advance_context_on_standard_invoice() -> None:
     with pytest.raises(ValidationError, match="advance is only valid"):
         KsefInvoiceBody(
-            issue_date="2026-03-29",
+            issue_date=date(2026, 3, 29),
+            issue_place=None,
             invoice_number="FV/1/2026",
             rows=[make_invoice_line()],
             advance=AdvancePaymentInvoiceContext(
-                amount_before_correction="1500.45",
+                amount_before_correction=Decimal("1500.45"),
             ),
         )

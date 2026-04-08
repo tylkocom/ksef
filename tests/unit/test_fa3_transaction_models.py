@@ -4,8 +4,10 @@ import pytest
 from pydantic import ValidationError
 
 from ksef2.domain.models.fa3.body.transaction import (
+    TransactionAddress,
     TransactionConditions,
     TransactionContract,
+    TransactionIdentity,
     TransactionTransport,
 )
 
@@ -51,7 +53,7 @@ def test_transaction_transport_requires_flattened_carrier_fields_together() -> N
         match="carrier_identity and carrier_address must be provided together",
     ):
         TransactionTransport(
-            carrier_identity={"name": "Jan Nowak"},
+            carrier_identity=TransactionIdentity(name="Jan Nowak"),
         )
 
     with pytest.raises(
@@ -59,8 +61,8 @@ def test_transaction_transport_requires_flattened_carrier_fields_together() -> N
         match="carrier_identity and carrier_address must be provided together",
     ):
         TransactionTransport(
-            carrier_address={
-                "country_code": "PL",
-                "address_line_1": "ul. Pomaranczowa 12",
-            },
+            carrier_address=TransactionAddress(
+                country_code="PL",
+                address_line_1="ul. Pomaranczowa 12",
+            ),
         )

@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 from ksef2.domain.models.fa3 import AdvanceOrderLine
-from ksef2.domain.models.fa3.body import SaleCategory, InvoiceRow
+from ksef2.domain.models.fa3.body import InvoiceRow, SaleCategory, VatRate
 from ksef2.infra.mappers.invoices.fa3.domain.lines import to_spec as lines_to_spec
 from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import Twybor1
 from ksef2.infra.schema.fa3.models.schemat import (
@@ -22,7 +22,7 @@ def test_lines_to_spec_maps_complete_invoice_line() -> None:
             quantity=Decimal("2"),
             unit_price_net=Decimal("3500.12345678"),
             net_amount=Decimal("7000.25"),
-            vat_rate="23",
+            vat_rate=VatRate.VAT_23,
             vat_amount=Decimal("1600.55"),
             unique_id="line-001",
             supply_date=date(2026, 3, 29),
@@ -80,7 +80,7 @@ def test_lines_to_spec_maps_optional_fields_to_none() -> None:
             quantity=Decimal("10"),
             unit_price_net=Decimal("100.00"),
             net_amount=Decimal("1000.00"),
-            vat_rate="zw",
+            vat_rate=VatRate.EXEMPT,
             sale_category=SaleCategory.EXEMPT,
             vat_amount=Decimal("0.00"),
         ),
@@ -111,7 +111,7 @@ def test_lines_to_spec_maps_zero_wdt_bucket_to_brochure_specific_value() -> None
             quantity=Decimal("1"),
             unit_price_net=Decimal("500.00"),
             net_amount=Decimal("500.00"),
-            vat_rate="0",
+            vat_rate=VatRate.VAT_0,
             sale_category=SaleCategory.ZERO_WDT,
             vat_amount=Decimal("0.00"),
         ),
@@ -128,7 +128,7 @@ def test_lines_to_spec_maps_advance_order_line_to_zamowienie_row() -> None:
             quantity=Decimal("1"),
             unit_of_measure="usl",
             gross_amount=Decimal("1230.00"),
-            vat_rate="23",
+            vat_rate=VatRate.VAT_23,
             procedure="TT_D",
             annex_15_marker=True,
         ),

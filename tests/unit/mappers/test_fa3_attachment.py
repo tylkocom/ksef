@@ -75,6 +75,7 @@ def test_attachment_from_spec_restores_column_names_and_text() -> None:
 
     assert isinstance(mapped, Attachment)
     block = mapped.data_blocks[0]
+    assert block.tables is not None
     table = block.tables[0]
 
     assert block.paragraphs == ["First paragraph", "Second paragraph"]

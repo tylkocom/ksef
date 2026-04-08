@@ -246,7 +246,7 @@ def _(schema: FakturaZalacznikBlokDanychTabela) -> AttachmentTable:
         _from_spec_table_meta_data(schema.tmeta_dane) if schema.tmeta_dane else []
     )
     columns_names = [column.nkom.value for column in schema.tnaglowek.kol]
-    columns_format = [
+    columns_format: list[ValueType] = [
         _from_spec_column_type(column.typ.value) for column in schema.tnaglowek.kol
     ]
     rows = [list(row.wkom) for row in schema.wiersz]

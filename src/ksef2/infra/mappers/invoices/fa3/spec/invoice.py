@@ -1,5 +1,7 @@
 """Mappings from FA(3) invoice schema models to domain objects."""
 
+from datetime import date, datetime
+from decimal import Decimal
 from functools import singledispatch
 from typing import overload
 
@@ -9,6 +11,7 @@ from ksef2.domain.models.fa3.body import (
     InvoiceType,
     InvoiceSummaryOverrides,
 )
+from ksef2.domain.models.fa3.body.root import get_placeholder_invoice_number
 from ksef2.domain.models.fa3.body.advance_payment import (
     AdvancePaymentInvoiceContext,
     PartialAdvancePayment,
@@ -82,33 +85,74 @@ def _from_spec(schema: object) -> object:
     )
 
 
+def _to_decimal(value: Decimal | str | None) -> Decimal | None:
+    if value is None or isinstance(value, Decimal):
+        return value
+    return Decimal(value)
+
+
+def _to_required_decimal(value: Decimal | str | None, *, field_name: str) -> Decimal:
+    parsed = _to_decimal(value)
+    if parsed is None:
+        raise ValueError(f"{field_name} is required for FA(3) mapping")
+    return parsed
+
+
+def _to_date(value: date | datetime | str | None) -> date | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    return date.fromisoformat(value)
+
+
+def _to_required_date(
+    value: date | datetime | str | None,
+    *,
+    field_name: str,
+) -> date:
+    parsed = _to_date(value)
+    if parsed is None:
+        raise ValueError(f"{field_name} is required for FA(3) mapping")
+    return parsed
+
+
+def _enum_value(value: object, *, field_name: str) -> str:
+    raw = getattr(value, "value", value)
+    if not isinstance(raw, str):
+        raise ValueError(f"{field_name} must be a string-compatible schema value")
+    return raw
+
+
 def _summary_overrides_from_schema(
     schema: FakturaFa,
 ) -> InvoiceSummaryOverrides | None:
     overrides = InvoiceSummaryOverrides(
-        base_rate_net_total=schema.p_13_1,
-        base_rate_vat_total=schema.p_14_1,
-        base_rate_vat_total_pln=schema.p_14_1_w,
-        first_reduced_rate_net_total=schema.p_13_2,
-        first_reduced_rate_vat_total=schema.p_14_2,
-        first_reduced_rate_vat_total_pln=schema.p_14_2_w,
-        second_reduced_rate_net_total=schema.p_13_3,
-        second_reduced_rate_vat_total=schema.p_14_3,
-        second_reduced_rate_vat_total_pln=schema.p_14_3_w,
-        taxi_flat_rate_net_total=schema.p_13_4,
-        taxi_flat_rate_vat_total=schema.p_14_4,
-        taxi_flat_rate_vat_total_pln=schema.p_14_4_w,
-        special_procedure_xii_net_total=schema.p_13_5,
-        special_procedure_xii_vat_total=schema.p_14_5,
-        zero_rate_domestic_total=schema.p_13_6_1,
-        zero_rate_wdt_total=schema.p_13_6_2,
-        zero_rate_export_total=schema.p_13_6_3,
-        exempt_total=schema.p_13_7,
-        out_of_territory_total=schema.p_13_8,
-        article_100_services_total=schema.p_13_9,
-        reverse_charge_total=schema.p_13_10,
-        margin_total=schema.p_13_11,
-        total_gross=schema.p_15,
+        base_rate_net_total=_to_decimal(schema.p_13_1),
+        base_rate_vat_total=_to_decimal(schema.p_14_1),
+        base_rate_vat_total_pln=_to_decimal(schema.p_14_1_w),
+        first_reduced_rate_net_total=_to_decimal(schema.p_13_2),
+        first_reduced_rate_vat_total=_to_decimal(schema.p_14_2),
+        first_reduced_rate_vat_total_pln=_to_decimal(schema.p_14_2_w),
+        second_reduced_rate_net_total=_to_decimal(schema.p_13_3),
+        second_reduced_rate_vat_total=_to_decimal(schema.p_14_3),
+        second_reduced_rate_vat_total_pln=_to_decimal(schema.p_14_3_w),
+        taxi_flat_rate_net_total=_to_decimal(schema.p_13_4),
+        taxi_flat_rate_vat_total=_to_decimal(schema.p_14_4),
+        taxi_flat_rate_vat_total_pln=_to_decimal(schema.p_14_4_w),
+        special_procedure_xii_net_total=_to_decimal(schema.p_13_5),
+        special_procedure_xii_vat_total=_to_decimal(schema.p_14_5),
+        zero_rate_domestic_total=_to_decimal(schema.p_13_6_1),
+        zero_rate_wdt_total=_to_decimal(schema.p_13_6_2),
+        zero_rate_export_total=_to_decimal(schema.p_13_6_3),
+        exempt_total=_to_decimal(schema.p_13_7),
+        out_of_territory_total=_to_decimal(schema.p_13_8),
+        article_100_services_total=_to_decimal(schema.p_13_9),
+        reverse_charge_total=_to_decimal(schema.p_13_10),
+        margin_total=_to_decimal(schema.p_13_11),
+        total_gross=_to_decimal(schema.p_15),
     )
     if not any(
         value is not None for value in overrides.model_dump(mode="python").values()
@@ -158,25 +202,25 @@ def _(schema: FakturaFa) -> KsefInvoiceBody:
     if schema.rozliczenie is not None:
         charges = [
             SettlementCharge(
-                amount=item.kwota,
+                amount=_to_required_decimal(item.kwota, field_name="rozliczenie.kwota"),
                 reason=item.powod,
             )
             for item in schema.rozliczenie.obciazenia
         ]
         deductions = [
             SettlementDeduction(
-                amount=item.kwota,
+                amount=_to_required_decimal(item.kwota, field_name="rozliczenie.kwota"),
                 reason=item.powod,
             )
             for item in schema.rozliczenie.odliczenia
         ]
         settlement = InvoiceSettlement(
             charges=charges,
-            charges_total=schema.rozliczenie.suma_obciazen,
+            charges_total=_to_decimal(schema.rozliczenie.suma_obciazen),
             deductions=deductions,
-            deductions_total=schema.rozliczenie.suma_odliczen,
-            amount_due=schema.rozliczenie.do_zaplaty,
-            amount_to_settle=schema.rozliczenie.do_rozliczenia,
+            deductions_total=_to_decimal(schema.rozliczenie.suma_odliczen),
+            amount_due=_to_decimal(schema.rozliczenie.do_zaplaty),
+            amount_to_settle=_to_decimal(schema.rozliczenie.do_rozliczenia),
         )
 
     correction = None
@@ -192,7 +236,10 @@ def _(schema: FakturaFa) -> KsefInvoiceBody:
     if has_correction:
         corrected_invoices = [
             CorrectedInvoiceReference(
-                issue_date=item.data_wyst_fa_korygowanej,
+                issue_date=_to_required_date(
+                    item.data_wyst_fa_korygowanej,
+                    field_name="dane_fa_korygowanej.data_wyst_fa_korygowanej",
+                ),
                 invoice_number=item.nr_fa_korygowanej,
                 ksef_id=item.nr_kse_ffa_korygowanej,
                 outside_ksef=flag(item.nr_kse_fn),
@@ -231,9 +278,15 @@ def _(schema: FakturaFa) -> KsefInvoiceBody:
     if has_advance:
         partial_payments = [
             PartialAdvancePayment(
-                payment_date=item.p_6_z,
-                amount=item.p_15_z,
-                currency_exchange_rate=item.kurs_waluty_zw,
+                payment_date=_to_required_date(
+                    item.p_6_z,
+                    field_name="zaliczka_czesciowa.p_6_z",
+                ),
+                amount=_to_required_decimal(
+                    item.p_15_z,
+                    field_name="zaliczka_czesciowa.p_15_z",
+                ),
+                currency_exchange_rate=_to_decimal(item.kurs_waluty_zw),
             )
             for item in schema.zaliczka_czesciowa
         ]
@@ -246,8 +299,8 @@ def _(schema: FakturaFa) -> KsefInvoiceBody:
             for item in schema.faktura_zaliczkowa
         ]
         advance = AdvancePaymentInvoiceContext(
-            amount_before_correction=schema.p_15_zk,
-            currency_exchange_rate_before_correction=schema.kurs_waluty_zk,
+            amount_before_correction=_to_decimal(schema.p_15_zk),
+            currency_exchange_rate_before_correction=_to_decimal(schema.kurs_waluty_zk),
             advance_partial_payments=partial_payments,
             advance_invoice_references=references,
         )
@@ -258,28 +311,28 @@ def _(schema: FakturaFa) -> KsefInvoiceBody:
             line_from_spec(row) for row in schema.zamowienie.zamowienie_wiersz
         ]
         order = InvoiceOrder(
-            total_value=schema.zamowienie.wartosc_zamowienia,
+            total_value=_to_decimal(schema.zamowienie.wartosc_zamowienia),
             order_lines=order_lines,
         )
-
-    body_kwargs: dict[str, object] = {
-        "currency": schema.kod_waluty,
-        "issue_date": schema.p_1,
-        "issue_place": schema.p_1_m,
-        "warehouse_documents": list(schema.wz or []),
-        "date_of_supply": schema.p_6,
-        "period_start": period_start,
-        "period_end": period_end,
-        "vat_currency_exchange_rate": schema.kurs_waluty_z,
-        "annotations": annotations,
-        "invoice_type": invoice_type,
-        "correction": correction,
-        "advance": advance,
-        "fp_invoice": schema.fp == Twybor1.VALUE_1 if schema.fp is not None else False,
-        "related_party_transaction": schema.tp == Twybor1.VALUE_1
+    return KsefInvoiceBody(
+        currency=_enum_value(schema.kod_waluty, field_name="kod_waluty"),
+        issue_date=_to_required_date(schema.p_1, field_name="p_1"),
+        issue_place=schema.p_1_m,
+        invoice_number=schema.p_2 or get_placeholder_invoice_number(),
+        warehouse_documents=list(schema.wz or []),
+        date_of_supply=_to_date(schema.p_6),
+        period_start=_to_date(period_start),
+        period_end=_to_date(period_end),
+        vat_currency_exchange_rate=_to_decimal(schema.kurs_waluty_z),
+        annotations=annotations,
+        invoice_type=invoice_type,
+        correction=correction,
+        advance=advance,
+        fp_invoice=schema.fp == Twybor1.VALUE_1 if schema.fp is not None else False,
+        related_party_transaction=schema.tp == Twybor1.VALUE_1
         if schema.tp is not None
         else False,
-        "additional_description": [
+        additional_description=[
             AdditionalDescriptionEntry(
                 row_number=item.nr_wiersza,
                 key=item.klucz,
@@ -287,23 +340,18 @@ def _(schema: FakturaFa) -> KsefInvoiceBody:
             )
             for item in schema.dodatkowy_opis
         ],
-        "return_of_excise": None
+        return_of_excise=None
         if schema.zwrot_akcyzy is None
         else schema.zwrot_akcyzy == Twybor1.VALUE_1,
-        "rows": rows,
-        "settlement": settlement,
-        "payment": payment_from_spec(schema.platnosc) if schema.platnosc else None,
-        "transaction_conditions": transaction_from_spec(schema.warunki_transakcji)
+        rows=rows,
+        settlement=settlement,
+        payment=payment_from_spec(schema.platnosc) if schema.platnosc else None,
+        transaction_conditions=transaction_from_spec(schema.warunki_transakcji)
         if schema.warunki_transakcji
         else None,
-        "order": order,
-        "summary_overrides": _summary_overrides_from_schema(schema),
-    }
-
-    if schema.p_2 is not None:
-        body_kwargs["invoice_number"] = schema.p_2
-
-    return KsefInvoiceBody(**body_kwargs)
+        order=order,
+        summary_overrides=_summary_overrides_from_schema(schema),
+    )
 
 
 @_from_spec.register

@@ -12,6 +12,7 @@ from ksef2.domain.models.fa3.body.transaction import (
 )
 from ksef2.infra.mappers.invoices.fa3.domain.transaction import from_spec, to_spec
 from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import Twybor1
+from ksef2.infra.schema.fa3.models.kody_krajow_v10_0_e import TkodKraju
 from ksef2.infra.schema.fa3.models.schemat import (
     FakturaFaWarunkiTransakcji,
     FakturaFaWarunkiTransakcjiTransport,
@@ -125,7 +126,7 @@ def test_transaction_from_spec_restores_domain_model() -> None:
                         nazwa="Jan Nowak",
                     ),
                     adres_przewoznika=Tadres(
-                        kod_kraju="PL",
+                        kod_kraju=TkodKraju.PL,
                         adres_l1="ul. Pomaranczowa 12",
                         adres_l2="33-333 Gliwice",
                     ),
@@ -140,19 +141,19 @@ def test_transaction_from_spec_restores_domain_model() -> None:
                     "2026-09-25T21:40:00Z"
                 ),
                 wysylka_z=Tadres(
-                    kod_kraju="PL",
+                    kod_kraju=TkodKraju.PL,
                     adres_l1="ul. Zielona 5",
                     adres_l2="11-111 Katowice",
                 ),
                 wysylka_przez=[
                     Tadres(
-                        kod_kraju="PL",
+                        kod_kraju=TkodKraju.PL,
                         adres_l1="ul. Niebieska 27",
                         adres_l2='55-555 Lodz, Magazyn "B"',
                     )
                 ],
                 wysylka_do=Tadres(
-                    kod_kraju="PL",
+                    kod_kraju=TkodKraju.PL,
                     adres_l1="ul. Szara 25",
                     adres_l2="22-222 Gdynia",
                 ),

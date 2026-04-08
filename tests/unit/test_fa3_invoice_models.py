@@ -15,8 +15,14 @@ from ksef2.domain.models.fa3 import (
     KsefInvoiceBody,
     KsefInvoice,
 )
-from ksef2.domain.models.fa3.body import InvoiceType, InvoiceRow
-from ksef2.domain.models.fa3.body import SaleCategory, TaxRegime, VatTreatment
+from ksef2.domain.models.fa3.body import InvoiceRow, InvoiceType
+from ksef2.domain.models.fa3.body import (
+    SaleCategory,
+    TaxRegime,
+    VatClassification,
+    VatRate,
+    VatTreatment,
+)
 
 
 def make_polish_address() -> InvoiceAddress:
@@ -33,7 +39,7 @@ def make_invoice_line() -> InvoiceRow:
         quantity=Decimal("10"),
         unit_price_net=Decimal("100.00"),
         net_amount=Decimal("1000.00"),
-        vat_rate="23",
+        vat_rate=VatRate.VAT_23,
         vat_amount=Decimal("230.00"),
     )
 
@@ -68,6 +74,7 @@ def test_foreign_entity_may_omit_tax_id() -> None:
     )
 
     assert entity.tax_id is None
+    assert entity.address is not None
     assert entity.address.country_code == "DE"
 
 
@@ -128,6 +135,7 @@ def test_ksef_invoice_rejects_seller_without_tax_id() -> None:
             ),
             body=KsefInvoiceBody(
                 issue_date=date(2026, 3, 29),
+                issue_place=None,
                 invoice_number="FV/1/2026",
                 rows=[make_invoice_line()],
             ),
@@ -137,6 +145,7 @@ def test_ksef_invoice_rejects_seller_without_tax_id() -> None:
 def test_invoice_body_defaults_currency_to_pln() -> None:
     body = KsefInvoiceBody(
         issue_date=date(2026, 3, 29),
+        issue_place=None,
         invoice_number="FV/1/2026",
         rows=[make_invoice_line()],
     )
@@ -173,7 +182,7 @@ def test_invoice_line_accepts_full_fa3_shape() -> None:
         quantity=Decimal("2"),
         unit_price_net=Decimal("3500.12345678"),
         net_amount=Decimal("7000.25"),
-        vat_rate="23",
+        vat_rate=VatRate.VAT_23,
         vat_amount=Decimal("1600.55"),
         unique_id="line-001",
         supply_date=date(2026, 3, 29),
@@ -208,7 +217,7 @@ def test_invoice_line_derives_structured_vat_classification_from_legacy_inputs()
         quantity=Decimal("1"),
         unit_price_net=Decimal("100.00"),
         net_amount=Decimal("100.00"),
-        vat_rate="0",
+        vat_rate=VatRate.VAT_0,
         sale_category=SaleCategory.ZERO_WDT,
     )
 
@@ -226,14 +235,14 @@ def test_invoice_line_derives_legacy_fields_from_structured_vat_classification()
         quantity=Decimal("1"),
         unit_price_net=Decimal("100.00"),
         net_amount=Decimal("100.00"),
-        vat_classification={
-            "treatment": VatTreatment.TAXABLE,
-            "rate": Decimal("23"),
-        },
+        vat_classification=VatClassification(
+            treatment=VatTreatment.TAXABLE,
+            rate=Decimal("23"),
+        ),
     )
 
     assert line.sale_category is SaleCategory.RATE_23
-    assert line.vat_rate == "23"
+    assert line.vat_rate is VatRate.VAT_23
 
 
 def test_invoice_entity_accepts_contact_and_customer_number() -> None:
@@ -271,6 +280,7 @@ def test_ksef_invoice_accepts_lines_collection() -> None:
         ),
         body=KsefInvoiceBody(
             issue_date=date(2026, 3, 29),
+            issue_place=None,
             invoice_number="FV/1/2026",
             rows=[make_invoice_line()],
         ),
@@ -306,6 +316,7 @@ def test_ksef_invoice_rejects_empty_lines_collection() -> None:
             ),
             body=KsefInvoiceBody(
                 issue_date=date(2026, 3, 29),
+                issue_place=None,
                 invoice_number="FV/1/2026",
                 rows=[],
             ),
@@ -315,6 +326,7 @@ def test_ksef_invoice_rejects_empty_lines_collection() -> None:
 def test_advance_invoice_body_accepts_order_without_fa_wiersz() -> None:
     body = KsefInvoiceBody(
         issue_date=date(2026, 3, 29),
+        issue_place=None,
         invoice_number="FZ/1/2026",
         invoice_type=InvoiceType.ZAL,
         order=InvoiceOrder(
@@ -322,7 +334,7 @@ def test_advance_invoice_body_accepts_order_without_fa_wiersz() -> None:
                 AdvanceOrderLine(
                     name="Projekt",
                     gross_amount=Decimal("1230.00"),
-                    vat_rate="23",
+                    vat_rate=VatRate.VAT_23,
                 )
             ],
         ),
@@ -339,26 +351,28 @@ def test_invoice_address_normalizes_country_code() -> None:
     entity = InvoiceEntity(
         tax_id="1234567890",
         name="ACME Sp. z o.o.",
-        address={
-            "country_code": "PL",
-            "address_line_1": "Marszalkowska 10/5",
-            "address_line_2": "00-001 Warszawa",
-        },
+        address=InvoiceAddress(
+            country_code="PL",
+            address_line_1="Marszalkowska 10/5",
+            address_line_2="00-001 Warszawa",
+        ),
     )
 
+    assert entity.address is not None
     assert entity.address.country_code == "PL"
 
 
 def test_invoice_address_accepts_foreign_shape() -> None:
     entity = InvoiceEntity(
         name="Globex GmbH",
-        address={
-            "country_code": "DE",
-            "address_line_1": "Unter den Linden 1",
-            "address_line_2": "10115 Berlin",
-        },
+        address=InvoiceAddress(
+            country_code="DE",
+            address_line_1="Unter den Linden 1",
+            address_line_2="10115 Berlin",
+        ),
     )
 
+    assert entity.address is not None
     assert entity.address.address_line_1 == "Unter den Linden 1"
 
 
@@ -377,6 +391,7 @@ def test_invoice_body_rejects_pln_vat_exchange_rate() -> None:
     ):
         KsefInvoiceBody(
             issue_date=date(2026, 3, 29),
+            issue_place=None,
             invoice_number="FV/1/2026",
             vat_currency_exchange_rate=Decimal("4.500000"),
             rows=[make_invoice_line()],

@@ -3,7 +3,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from ksef2.domain.models.fa3.body import InvoiceOrder, InvoiceOrderLine
+from ksef2.domain.models.fa3.body import InvoiceOrder, InvoiceOrderLine, VatRate
 
 
 def test_invoice_order_populates_total_value_from_order_lines() -> None:
@@ -12,7 +12,7 @@ def test_invoice_order_populates_total_value_from_order_lines() -> None:
             InvoiceOrderLine(
                 name="Projekt",
                 gross_amount=Decimal("1230.00"),
-                vat_rate="23",
+                vat_rate=VatRate.VAT_23,
             )
         ]
     )
@@ -31,7 +31,7 @@ def test_invoice_order_rejects_total_value_mismatch() -> None:
                 InvoiceOrderLine(
                     name="Projekt",
                     gross_amount=Decimal("1230.00"),
-                    vat_rate="23",
+                    vat_rate=VatRate.VAT_23,
                 )
             ],
         )

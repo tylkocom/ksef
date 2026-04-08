@@ -1,3 +1,6 @@
+from datetime import date
+from decimal import Decimal
+
 import pytest
 from pydantic import ValidationError
 
@@ -7,9 +10,9 @@ from ksef2.domain.models.fa3.body import AdvancePaymentInvoiceContext
 
 def test_partial_advance_payment_accepts_schema_shape() -> None:
     payment = PartialAdvancePayment(
-        payment_date="2026-09-10",
-        amount="500",
-        currency_exchange_rate="4.4512",
+        payment_date=date(2026, 9, 10),
+        amount=Decimal("500"),
+        currency_exchange_rate=Decimal("4.4512"),
     )
 
     assert str(payment.payment_date) == "2026-09-10"
@@ -61,8 +64,8 @@ def test_advance_payment_rejects_mixed_reference_modes() -> None:
 
 def test_invoice_advance_context_rounds_before_correction_values() -> None:
     context = AdvancePaymentInvoiceContext(
-        amount_before_correction="1200.456",
-        currency_exchange_rate_before_correction="4.4512349",
+        amount_before_correction=Decimal("1200.456"),
+        currency_exchange_rate_before_correction=Decimal("4.4512349"),
     )
 
     assert str(context.amount_before_correction) == "1200.46"

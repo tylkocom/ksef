@@ -354,6 +354,8 @@ def _(request: KsefInvoiceBody) -> FakturaFa:
 
     zamowienie = None
     if request.order is not None:
+        if request.order.total_value is None:
+            raise ValueError("order.total_value must be populated before FA(3) mapping")
         zamowienie = FakturaFaZamowienie(
             wartosc_zamowienia=_format_decimal(request.order.total_value),
             zamowienie_wiersz=[

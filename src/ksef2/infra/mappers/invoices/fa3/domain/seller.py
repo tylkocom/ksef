@@ -65,6 +65,10 @@ def _to_spec(request: BaseModel) -> object:
 def _(request: InvoiceEntity) -> FakturaPodmiot1:
     if request.tax_id is None:
         raise ValueError("Seller tax_id is required for FA(3) mapping")
+    if request.name is None:
+        raise ValueError("Seller name is required for FA(3) mapping")
+    if request.address is None:
+        raise ValueError("Seller address is required for FA(3) mapping")
 
     return FakturaPodmiot1(
         prefiks_podatnika=_map_vat_prefix(request.vat_prefix),

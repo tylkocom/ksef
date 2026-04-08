@@ -34,6 +34,8 @@ def _from_spec(schema: object) -> object:
 @_from_spec.register
 def _(schema: FakturaPodmiot3) -> InvoiceThirdParty:
     identity = schema.dane_identyfikacyjne
+    if identity.nazwa is None:
+        raise ValueError("Third-party name is required for FA(3) mapping")
     eu_vat_id = (
         f"{identity.kod_ue.value}{identity.nr_vat_ue}"
         if identity.kod_ue is not None and identity.nr_vat_ue is not None

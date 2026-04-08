@@ -5,7 +5,11 @@ from ksef2.infra.schema.fa3.models.schemat import FakturaStopka
 
 
 def from_spec(schema: FakturaStopka) -> InvoiceFooter:
-    informations = [info.stopka_faktury for info in schema.informacje]
+    informations = [
+        info.stopka_faktury
+        for info in schema.informacje
+        if info.stopka_faktury is not None
+    ]
     registries = [
         FooterRegistry(
             full_name=registry.pelna_nazwa,

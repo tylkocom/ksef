@@ -5,6 +5,7 @@ from functools import singledispatch
 from typing import overload
 
 from ksef2.domain.models.fa3 import InvoiceHeader
+from ksef2.domain.models.fa3.header import _default_system_info
 from ksef2.infra.schema.fa3.models.schemat import Tnaglowek
 
 
@@ -35,5 +36,5 @@ def _(schema: Tnaglowek) -> InvoiceHeader:
     timestamp = raw if isinstance(raw, datetime) else datetime.fromisoformat(str(raw))
     return InvoiceHeader(
         generation_timestamp=timestamp,
-        system_info=schema.system_info,
+        system_info=schema.system_info or _default_system_info(),
     )

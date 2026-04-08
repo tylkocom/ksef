@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from ksef2.domain.models.fa3 import AdvanceOrderLine
 from ksef2.domain.models.fa3.body import InvoiceRow
+from ksef2.domain.models.fa3.body.order import InvoiceOrderLine
 from ksef2.domain.models.fa3.body.tax import TaxRegime, VatClassification, VatTreatment
 from ksef2.infra.schema.fa3.models.elementarne_typy_danych_v10_0_e import Twybor1
 from ksef2.infra.schema.fa3.models.schemat import (
@@ -96,6 +97,12 @@ def _was_explicitly_set(request: InvoiceRow, field_name: str) -> bool:
 
 @overload
 def to_spec(request: InvoiceRow, row_number: int) -> FakturaFaFaWiersz: ...
+
+
+@overload
+def to_spec(
+    request: InvoiceOrderLine, row_number: int
+) -> FakturaFaZamowienieZamowienieWiersz: ...
 
 
 @overload
