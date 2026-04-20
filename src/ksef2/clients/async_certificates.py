@@ -108,7 +108,9 @@ class AsyncCertificatesClient:
             expires_after=expires_after,
         )
         body = to_spec(request)
-        spec_resp = await self._endpoints.query(body=body, **parameters.to_query_params())
+        spec_resp = await self._endpoints.query(
+            body=body, **parameters.to_query_params()
+        )
         return from_spec(spec_resp)
 
     async def all(

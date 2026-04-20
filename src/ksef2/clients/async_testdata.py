@@ -56,7 +56,9 @@ class AsyncTestDataClient:
         await self._endpoints.create_subject(to_spec(request))
 
     async def delete_subject(self, *, nip: str) -> None:
-        await self._endpoints.delete_subject(to_spec(DeleteSubjectRequest(subject_nip=nip)))
+        await self._endpoints.delete_subject(
+            to_spec(DeleteSubjectRequest(subject_nip=nip))
+        )
 
     async def create_person(
         self,
@@ -105,7 +107,9 @@ class AsyncTestDataClient:
         await self._endpoints.revoke_permissions(to_spec(request))
 
     async def enable_attachments(self, *, nip: str) -> None:
-        await self._endpoints.enable_attachments(to_spec(EnableAttachmentsRequest(nip=nip)))
+        await self._endpoints.enable_attachments(
+            to_spec(EnableAttachmentsRequest(nip=nip))
+        )
 
     async def revoke_attachments(
         self, *, nip: str, expected_end_date: date | None = None
@@ -117,7 +121,9 @@ class AsyncTestDataClient:
         await self._endpoints.revoke_attachments(to_spec(request))
 
     async def block_context(self, *, context: AuthContextIdentifier) -> None:
-        await self._endpoints.block_context(to_spec(BlockContextRequest(context=context)))
+        await self._endpoints.block_context(
+            to_spec(BlockContextRequest(context=context))
+        )
 
     async def unblock_context(self, *, context: AuthContextIdentifier) -> None:
         await self._endpoints.unblock_context(

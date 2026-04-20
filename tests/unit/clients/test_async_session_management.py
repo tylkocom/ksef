@@ -22,7 +22,9 @@ class TestAsyncSessionManagementClient:
         auth_list_resp: BaseFactory[spec.AuthenticationListResponse],
     ) -> None:
         client = AsyncSessionManagementClient(async_fake_transport)
-        async_fake_transport.enqueue(auth_list_resp.build(continuationToken=None).model_dump(mode="json"))
+        async_fake_transport.enqueue(
+            auth_list_resp.build(continuationToken=None).model_dump(mode="json")
+        )
 
         result = asyncio.run(client.query())
 

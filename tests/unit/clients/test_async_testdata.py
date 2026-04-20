@@ -44,7 +44,9 @@ class TestAsyncTestDataClient:
         )
 
         assert async_fake_transport.calls[0].path == ApiRoutes.CREATE_SUBJECT
-        assert async_fake_transport.calls[0].json == to_spec(request).model_dump(mode="json")
+        assert async_fake_transport.calls[0].json == to_spec(request).model_dump(
+            mode="json"
+        )
 
     def test_create_person(
         self,

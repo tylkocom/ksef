@@ -155,7 +155,9 @@ class TestAsyncBatchService:
         )
         async_fake_transport.enqueue(status_code=201, json_body={})
 
-        asyncio.run(service.upload_parts(session=session, prepared_batch=prepared_batch))
+        asyncio.run(
+            service.upload_parts(session=session, prepared_batch=prepared_batch)
+        )
 
         assert async_fake_transport.calls[0].method == "PUT"
         assert async_fake_transport.calls[0].path == "https://example.com/upload/part-1"
@@ -222,7 +224,9 @@ class TestAsyncBatchService:
         async_fake_transport.enqueue(status_code=201, json_body={})
         async_fake_transport.enqueue(json_body={})
 
-        result = asyncio.run(service.submit_prepared_batch(prepared_batch=prepared_batch))
+        result = asyncio.run(
+            service.submit_prepared_batch(prepared_batch=prepared_batch)
+        )
 
         assert result.reference_number == "batch-ref"
         assert async_fake_transport.calls[0].method == "PUT"

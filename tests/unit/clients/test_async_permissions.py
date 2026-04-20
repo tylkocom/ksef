@@ -56,7 +56,9 @@ class TestAsyncPermissionsClient:
     def test_query_authorizations(
         self,
         async_fake_transport: AsyncFakeTransport,
-        perm_query_auth_resp: BaseFactory[spec.QueryEntityAuthorizationPermissionsResponse],
+        perm_query_auth_resp: BaseFactory[
+            spec.QueryEntityAuthorizationPermissionsResponse
+        ],
     ):
         client = AsyncPermissionsClient(async_fake_transport)
         expected = perm_query_auth_resp.build()
@@ -65,4 +67,6 @@ class TestAsyncPermissionsClient:
         query = DomainAuthorizationPermissionsQueryFactory.build()
         result = asyncio.run(client.query_authorizations(query=query))
 
-        assert isinstance(result, domain_permissions.AuthorizationPermissionsQueryResponse)
+        assert isinstance(
+            result, domain_permissions.AuthorizationPermissionsQueryResponse
+        )

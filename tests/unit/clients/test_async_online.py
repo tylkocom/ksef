@@ -71,7 +71,9 @@ class TestAsyncOnlineSessionClient:
 
         assert len(async_fake_transport.calls) == 1
         assert async_fake_transport.calls[0].method == "POST"
-        assert async_fake_transport.calls[0].path == SessionRoutes.TERMINATE_ONLINE.format(
+        assert async_fake_transport.calls[
+            0
+        ].path == SessionRoutes.TERMINATE_ONLINE.format(
             referenceNumber=state.reference_number
         )
 
@@ -201,7 +203,9 @@ class TestAsyncOnlineSessionClient:
             ).model_dump(mode="json")
         )
 
-        with patch("ksef2.clients.async_online.encrypt_invoice", return_value=b"encrypted"):
+        with patch(
+            "ksef2.clients.async_online.encrypt_invoice", return_value=b"encrypted"
+        ):
             status = asyncio.run(
                 client.send_invoice_and_wait(
                     invoice_xml=b"<Invoice />",
@@ -219,7 +223,10 @@ class TestAsyncOnlineSessionClient:
 
 
 class TestAsyncAuthenticatedOnlineSession:
-    @patch("ksef2.clients.async_authenticated.encrypt_symmetric_key", return_value=b"enc-key")
+    @patch(
+        "ksef2.clients.async_authenticated.encrypt_symmetric_key",
+        return_value=b"enc-key",
+    )
     @patch(
         "ksef2.clients.async_authenticated.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
@@ -233,7 +240,9 @@ class TestAsyncAuthenticatedOnlineSession:
         domain_public_key_cert: BaseFactory[PublicKeyCertificate],
         session_open_online_resp: BaseFactory[spec.OpenOnlineSessionResponse],
     ) -> None:
-        async_fake_transport.enqueue(session_open_online_resp.build().model_dump(mode="json"))
+        async_fake_transport.enqueue(
+            session_open_online_resp.build().model_dump(mode="json")
+        )
         store = CertificateStore()
         store.load(
             [

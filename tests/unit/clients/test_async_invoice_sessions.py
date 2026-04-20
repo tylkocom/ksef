@@ -38,7 +38,9 @@ class TestAsyncInvoiceSessionsClient:
     ) -> None:
         client = AsyncInvoiceSessionsClient(async_fake_transport)
         async_fake_transport.enqueue(
-            session_list_resp.build(continuationToken="next-token").model_dump(mode="json")
+            session_list_resp.build(continuationToken="next-token").model_dump(
+                mode="json"
+            )
         )
         async_fake_transport.enqueue(
             session_list_resp.build(continuationToken=None).model_dump(mode="json")

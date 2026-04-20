@@ -75,7 +75,9 @@ class TestAsyncAuthClient:
 
         assert isinstance(result, AsyncAuthenticatedClient)
         assert len(async_fake_transport.calls) == 4
-        challenge_call, token_call, status_call, redeem_call = async_fake_transport.calls
+        challenge_call, token_call, status_call, redeem_call = (
+            async_fake_transport.calls
+        )
         assert challenge_call.method == "POST"
         assert challenge_call.path == AuthRoutes.CHALLENGE
         assert token_call.method == "POST"
@@ -108,7 +110,9 @@ class TestAsyncAuthClient:
     ) -> None:
         client = _build_auth_client(async_fake_transport)
         async_fake_transport.enqueue(json_body=[])
-        async_fake_transport.enqueue(auth_challenge_resp.build().model_dump(mode="json"))
+        async_fake_transport.enqueue(
+            auth_challenge_resp.build().model_dump(mode="json")
+        )
 
         with pytest.raises(
             NoCertificateAvailableError,
@@ -134,7 +138,9 @@ class TestAsyncAuthClient:
         failed_status = auth_status_resp.build(
             status=spec.StatusInfo(code=450, description="Authentication failed")
         )
-        async_fake_transport.enqueue(auth_challenge_resp.build().model_dump(mode="json"))
+        async_fake_transport.enqueue(
+            auth_challenge_resp.build().model_dump(mode="json")
+        )
         async_fake_transport.enqueue(init_response.model_dump(mode="json"))
         async_fake_transport.enqueue(failed_status.model_dump(mode="json"))
 
@@ -159,7 +165,9 @@ class TestAsyncAuthClient:
         pending_status = auth_status_resp.build(
             status=spec.StatusInfo(code=100, description="Pending")
         )
-        async_fake_transport.enqueue(auth_challenge_resp.build().model_dump(mode="json"))
+        async_fake_transport.enqueue(
+            auth_challenge_resp.build().model_dump(mode="json")
+        )
         async_fake_transport.enqueue(init_response.model_dump(mode="json"))
         async_fake_transport.enqueue(pending_status.model_dump(mode="json"))
         async_fake_transport.enqueue(pending_status.model_dump(mode="json"))

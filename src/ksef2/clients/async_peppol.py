@@ -22,7 +22,9 @@ class AsyncPeppolClient:
         params: OffsetPaginationParams | None = None,
     ) -> ListPeppolProvidersResponse:
         current_params = params or OffsetPaginationParams()
-        response = await self._endpoints.query_providers(**current_params.to_query_params())
+        response = await self._endpoints.query_providers(
+            **current_params.to_query_params()
+        )
         return from_spec(response)
 
     async def all(

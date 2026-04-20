@@ -64,7 +64,9 @@ class TestAsyncInvoicesClient:
         assert call.params["pageOffset"] == "1"
         assert call.params["sortOrder"] == "Asc"
 
-    @patch("ksef2.clients.async_invoices.encrypt_symmetric_key", return_value=b"enc-key")
+    @patch(
+        "ksef2.clients.async_invoices.encrypt_symmetric_key", return_value=b"enc-key"
+    )
     @patch(
         "ksef2.clients.async_invoices.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
@@ -117,16 +119,22 @@ class TestAsyncAuthenticatedInvoicesService:
         inv_query_metadata_resp: BaseFactory[spec.QueryInvoicesMetadataResponse],
     ) -> None:
         client = _build_client(async_fake_transport, domain_auth_tokens.build())
-        async_fake_transport.enqueue(inv_query_metadata_resp.build().model_dump(mode="json"))
+        async_fake_transport.enqueue(
+            inv_query_metadata_resp.build().model_dump(mode="json")
+        )
 
-        _ = asyncio.run(client.invoices.query_metadata(filters=inv_export_filters.build()))
+        _ = asyncio.run(
+            client.invoices.query_metadata(filters=inv_export_filters.build())
+        )
 
         call = async_fake_transport.calls[0]
         assert call.method == "POST"
         assert call.path == InvoiceRoutes.QUERY_METADATA
         assert call.headers == {"Authorization": "Bearer fake-access-token"}
 
-    @patch("ksef2.clients.async_invoices.encrypt_symmetric_key", return_value=b"enc-key")
+    @patch(
+        "ksef2.clients.async_invoices.encrypt_symmetric_key", return_value=b"enc-key"
+    )
     @patch(
         "ksef2.clients.async_invoices.generate_session_key",
         return_value=(b"k" * 32, b"v" * 16),
@@ -156,5 +164,8 @@ class TestAsyncAuthenticatedInvoicesService:
         )
 
         assert isinstance(result, invoices.ExportHandle)
-        assert async_fake_transport.calls[0].path == EncryptionRoutes.PUBLIC_KEY_CERTIFICATES
+        assert (
+            async_fake_transport.calls[0].path
+            == EncryptionRoutes.PUBLIC_KEY_CERTIFICATES
+        )
         assert async_fake_transport.calls[1].path == InvoiceRoutes.EXPORT

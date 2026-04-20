@@ -89,7 +89,9 @@ class AsyncPermissionsGrantEndpoints(AsyncBaseEndpoints):
 
 @final
 class AsyncRevokePermissionsEndpoints(AsyncBaseEndpoints):
-    async def revoke_person(self, permission_id: str) -> spec.PermissionsOperationResponse:
+    async def revoke_person(
+        self, permission_id: str
+    ) -> spec.PermissionsOperationResponse:
         return self._parse(
             await self._transport.delete(
                 path=routes.RevokePermissionsRoutes.REVOKE_PERMISSION.format(
@@ -142,7 +144,9 @@ class AsyncQueryPermissionsEndpoints(AsyncBaseEndpoints):
             spec.QueryPersonalPermissionsResponse,
         )
 
-    async def query_attachments_status(self) -> spec.CheckAttachmentPermissionStatusResponse:
+    async def query_attachments_status(
+        self,
+    ) -> spec.CheckAttachmentPermissionStatusResponse:
         return self._parse(
             await self._transport.get(
                 path=routes.QueryPermissionsRoutes.QUERY_ATTACHMENTS_STATUS,

@@ -130,7 +130,9 @@ class TestAsyncBatchSessionClient:
 
         assert status.status.code == 200
         assert async_fake_transport.calls[0].method == "GET"
-        assert async_fake_transport.calls[0].path == InvoiceRoutes.SESSION_STATUS.format(
+        assert async_fake_transport.calls[
+            0
+        ].path == InvoiceRoutes.SESSION_STATUS.format(
             referenceNumber=state.reference_number
         )
 
@@ -147,7 +149,9 @@ class TestAsyncBatchSessionClient:
 
         assert upo == b"<upo />"
         assert async_fake_transport.calls[0].method == "GET"
-        assert async_fake_transport.calls[0].path == SessionRoutes.GET_SESSION_UPO.format(
+        assert async_fake_transport.calls[
+            0
+        ].path == SessionRoutes.GET_SESSION_UPO.format(
             referenceNumber=state.reference_number,
             upoReferenceNumber="upo-ref",
         )

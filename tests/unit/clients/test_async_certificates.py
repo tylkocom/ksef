@@ -68,7 +68,9 @@ class TestAsyncCertificatesClient:
             hasMore=True,
         )
         page2 = cert_query_resp.build(
-            certificates=[CertificateListItemFactory.build(certificateSerialNumber="SN003")],
+            certificates=[
+                CertificateListItemFactory.build(certificateSerialNumber="SN003")
+            ],
             hasMore=False,
         )
         async_fake_transport.enqueue(page1.model_dump(mode="json"))
