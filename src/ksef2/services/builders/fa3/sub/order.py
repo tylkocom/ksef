@@ -1,6 +1,7 @@
 from decimal import Decimal
 from collections.abc import Sequence
-from typing import Annotated, Self, TypedDict
+from typing import Annotated, Self, Generic, TypeVar
+from typing_extensions import TypedDict
 from collections.abc import Callable
 
 from pydantic import TypeAdapter
@@ -14,6 +15,9 @@ from ksef2.domain.models.fa3.body import (
 from ksef2.domain.models.fa3.body.order import InvoiceOrder, InvoiceOrderLine
 from ksef2.domain.models.fa3.body.tax import coerce_vat_classification
 from ksef2.services.builders.fa3.metadata import builder_param
+
+
+TParent = TypeVar("TParent")
 
 
 class OrderState(TypedDict):
@@ -65,7 +69,7 @@ def _coerce_vat_classification(
     return coerce_vat_classification(value)
 
 
-class OrderBuilder[TParent]:
+class OrderBuilder(Generic[TParent]):
     def __init__(
         self,
         parent: TParent,

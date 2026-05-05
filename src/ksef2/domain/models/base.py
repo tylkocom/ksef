@@ -1,9 +1,12 @@
 """Shared Pydantic base classes for SDK models and query parameter models."""
 
-from typing import cast
+from typing import cast, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, AliasGenerator
 from pydantic.alias_generators import to_camel
+
+
+ParamsT = TypeVar("ParamsT")
 
 
 class KSeFBaseModel(BaseModel):
@@ -12,7 +15,7 @@ class KSeFBaseModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-class KSeFBaseParams[ParamsT](KSeFBaseModel):
+class KSeFBaseParams(KSeFBaseModel, Generic[ParamsT]):
     """Base model for query-parameter objects serialized with camelCase aliases."""
 
     model_config = ConfigDict(

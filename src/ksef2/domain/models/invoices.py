@@ -10,16 +10,14 @@ from ksef2.domain.models.session import FormSchema
 from ksef2.domain.types import CurrencyCodes, KsefInvoiceTypes
 
 
-type SortOrder = Literal["asc", "desc"]
-type BuyerIdentifierType = Literal["nip", "vat_ue", "other", "none"]
-type InvoiceType = KsefInvoiceTypes
-type InvoicingMode = Literal["online", "offline"]
-type ThirdSubjectIdentifierType = Literal[
-    "nip", "internal_id", "vat_ue", "other", "none"
-]
+SortOrder = Literal["asc", "desc"]
+BuyerIdentifierType = Literal["nip", "vat_ue", "other", "none"]
+InvoiceType = KsefInvoiceTypes
+InvoicingMode = Literal["online", "offline"]
+ThirdSubjectIdentifierType = Literal["nip", "internal_id", "vat_ue", "other", "none"]
 
-type SortOrderSpecValue = Literal["Asc", "Desc"]
-type InvoicingModeSpecValue = Literal["Online", "Offline"]
+SortOrderSpecValue = Literal["Asc", "Desc"]
+InvoicingModeSpecValue = Literal["Online", "Offline"]
 
 
 class SortOrderEnum(StrEnum):

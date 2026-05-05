@@ -1,6 +1,6 @@
 """Integration tests for batch session endpoints."""
 
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 
 import pytest
@@ -42,7 +42,7 @@ class TestBatchSession:
             / "invoice-template_v3.xml"
         )
         template_xml = template_path.read_text(encoding="utf-8")
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
 
         with client.testdata.temporal() as temp:
             temp.create_subject(

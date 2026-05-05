@@ -1,3 +1,4 @@
+from typing import TypeVar
 from collections.abc import Mapping
 
 import httpx
@@ -5,6 +6,8 @@ from pydantic import BaseModel, ValidationError
 
 from ksef2.infra.mappers import exceptions as mapper
 from ksef2.infra.schema.api import spec
+
+T = TypeVar("T", bound=BaseModel)
 
 _PROBLEM_DETAILS_CONTENT_TYPE = "application/problem+json"
 
@@ -17,7 +20,7 @@ _PROBLEM_MODELS: dict[int, type[BaseModel]] = {
 }
 
 
-def _try_parse[T: BaseModel](content: str, model: type[T]) -> T | None:
+def _try_parse(content: str, model: type[T]) -> T | None:
     try:
         return model.model_validate_json(content)
     except (ValidationError, ValueError):

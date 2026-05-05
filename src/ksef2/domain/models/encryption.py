@@ -6,9 +6,9 @@ from typing import Literal
 
 from ksef2.domain.models.base import KSeFBaseModel
 
-type CertUsageValue = Literal["ksef_token_encryption", "symmetric_key_encryption"]
+CertUsageValue = Literal["ksef_token_encryption", "symmetric_key_encryption"]
 
-type CertUsage = CertUsageValue
+CertUsage = CertUsageValue
 
 
 class CertUsageEnum(StrEnum):

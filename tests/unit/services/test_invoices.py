@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 import pytest
 from polyfactory import BaseFactory
@@ -30,7 +30,7 @@ def _ready_export_package() -> spec.InvoicePackage:
                     "partHash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
                     "encryptedPartSize": 128,
                     "encryptedPartHash": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=",
-                    "expirationDate": datetime.now(timezone.utc),
+                    "expirationDate": datetime.now(UTC),
                 }
             ],
             "isTruncated": False,

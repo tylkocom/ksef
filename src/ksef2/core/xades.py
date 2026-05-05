@@ -126,7 +126,7 @@ def generate_test_certificate(nip: str) -> tuple[Certificate, RSAPrivateKey]:
         ]
     )
 
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
     cert = (
         x509.CertificateBuilder()
         .subject_name(subject)
@@ -167,7 +167,7 @@ def generate_personal_test_certificate(
 
     subject = issuer = x509.Name(attributes)
 
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
     cert = (
         x509.CertificateBuilder()
         .subject_name(subject)

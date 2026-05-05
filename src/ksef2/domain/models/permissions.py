@@ -2,31 +2,33 @@
 
 from datetime import datetime
 from enum import StrEnum
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Generic, TypeVar
 
 from pydantic import Field, BaseModel
 
 from ksef2.domain.models.base import KSeFBaseModel
 
+ItemT = TypeVar("ItemT", bound=BaseModel)
+
 # ---------------------------------------------------------------------------
 # Type aliases (replace StrEnums)
 # ---------------------------------------------------------------------------
 
-type IdentifierType = Literal[
+IdentifierType = Literal[
     "nip", "pesel", "fingerprint", "system", "internal_id", "all_partners", "peppol_id"
 ]
 
-type CertificateSubjectIdentifierType = Literal["nip", "pesel", "fingerprint"]
+CertificateSubjectIdentifierType = Literal["nip", "pesel", "fingerprint"]
 
-type PersonAuthorIdentifierType = Literal["nip", "pesel", "fingerprint", "system"]
+PersonAuthorIdentifierType = Literal["nip", "pesel", "fingerprint", "system"]
 
-type PersonContextIdentifierType = Literal["nip", "internal_id"]
+PersonContextIdentifierType = Literal["nip", "internal_id"]
 
-type EntityIdentifierType = Literal["nip"]
+EntityIdentifierType = Literal["nip"]
 
-type EntityPermissionsContextIdentifierType = Literal["nip", "internal_id"]
+EntityPermissionsContextIdentifierType = Literal["nip", "internal_id"]
 
-type PersonPermissionScope = Literal[
+PersonPermissionScope = Literal[
     "invoice_read",
     "invoice_write",
     "introspection",
@@ -36,7 +38,7 @@ type PersonPermissionScope = Literal[
     "subunit_manage",
 ]
 
-type PersonalPermissionScope = Literal[
+PersonalPermissionScope = Literal[
     "invoice_read",
     "invoice_write",
     "introspection",
@@ -47,25 +49,25 @@ type PersonalPermissionScope = Literal[
     "vat_ue_manage",
 ]
 
-type EntityPermissionType = Literal["invoice_read", "invoice_write"]
+EntityPermissionType = Literal["invoice_read", "invoice_write"]
 
-type AuthorizationPermissionType = Literal[
+AuthorizationPermissionType = Literal[
     "self_invoicing", "rr_invoicing", "tax_representative", "pef_invoicing"
 ]
 
-type AuthorizationSubjectIdentifierType = Literal["nip", "peppol_id"]
+AuthorizationSubjectIdentifierType = Literal["nip", "peppol_id"]
 
-type IndirectPermissionType = Literal["invoice_read", "invoice_write"]
+IndirectPermissionType = Literal["invoice_read", "invoice_write"]
 
-type IndirectTargetIdentifierType = Literal["nip", "all_partners", "internal_id"]
+IndirectTargetIdentifierType = Literal["nip", "all_partners", "internal_id"]
 
-type SubunitIdentifierType = Literal["nip", "internal_id"]
+SubunitIdentifierType = Literal["nip", "internal_id"]
 
-type EuEntityPermissionType = Literal["invoice_read", "invoice_write"]
+EuEntityPermissionType = Literal["invoice_read", "invoice_write"]
 
-type EuEntityAdminContextIdentifierType = Literal["nip_vat_ue"]
+EuEntityAdminContextIdentifierType = Literal["nip_vat_ue"]
 
-type EntityRoleType = Literal[
+EntityRoleType = Literal[
     "court_bailiff",
     "enforcement_authority",
     "local_government_unit",
@@ -74,37 +76,29 @@ type EntityRoleType = Literal[
     "vat_group_sub_unit",
 ]
 
-type PermissionState = Literal["active", "inactive"]
+PermissionState = Literal["active", "inactive"]
 
-type OperationStatusCode = Literal[100, 200, 400, 410, 420, 430, 440, 450, 500, 550]
+OperationStatusCode = Literal[100, 200, 400, 410, 420, 430, 440, 450, 500, 550]
 
-type QueryType = Literal["granted", "received"]
+QueryType = Literal["granted", "received"]
 
-type PersonPermissionsQueryType = Literal["in_context", "granted_in_context"]
+PersonPermissionsQueryType = Literal["in_context", "granted_in_context"]
 
-type PersonPermissionsAuthorizedIdentifierType = Literal["nip", "pesel", "fingerprint"]
+PersonPermissionsAuthorizedIdentifierType = Literal["nip", "pesel", "fingerprint"]
 
-type PersonPermissionsContextIdentifierType = Literal["nip", "internal_id"]
+PersonPermissionsContextIdentifierType = Literal["nip", "internal_id"]
 
-type PersonPermissionsTargetIdentifierType = Literal[
-    "nip", "all_partners", "internal_id"
-]
+PersonPermissionsTargetIdentifierType = Literal["nip", "all_partners", "internal_id"]
 
-type PersonalPermissionsAuthorizedIdentifierType = Literal[
-    "nip", "pesel", "fingerprint"
-]
+PersonalPermissionsAuthorizedIdentifierType = Literal["nip", "pesel", "fingerprint"]
 
-type PersonalPermissionsContextIdentifierType = Literal["nip", "internal_id"]
+PersonalPermissionsContextIdentifierType = Literal["nip", "internal_id"]
 
-type PersonalPermissionsTargetIdentifierType = Literal[
-    "nip", "all_partners", "internal_id"
-]
+PersonalPermissionsTargetIdentifierType = Literal["nip", "all_partners", "internal_id"]
 
-type SubordinateEntityRoleType = Literal[
-    "local_government_sub_unit", "vat_group_sub_unit"
-]
+SubordinateEntityRoleType = Literal["local_government_sub_unit", "vat_group_sub_unit"]
 
-type EuEntityQueryPermissionType = Literal[
+EuEntityQueryPermissionType = Literal[
     "vat_ue_manage", "invoice_write", "invoice_read", "introspection"
 ]
 
@@ -622,6 +616,6 @@ class SubunitPermissionsQueryResponse(KSeFBaseModel):
     has_more: bool
 
 
-class ItemsListResponse[ItemT: BaseModel](KSeFBaseModel):
+class ItemsListResponse(KSeFBaseModel, Generic[ItemT]):
     items: list[ItemT]
     has_more: bool

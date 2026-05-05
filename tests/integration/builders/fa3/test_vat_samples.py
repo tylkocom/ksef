@@ -1,5 +1,5 @@
 from decimal import Decimal
-from datetime import date, datetime, timezone
+from datetime import date, datetime, UTC
 
 import pytest
 from xsdata.formats.dataclass.parsers import XmlParser
@@ -65,7 +65,7 @@ def test_new_fa3_vat_builder_sample_ksef_01_matches_loaded_sample() -> None:
     builder = StandardInvoiceBuilder()
     _ = (
         builder.header(
-            generation_timestamp=datetime(2025, 12, 15, 10, 30, 0, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2025, 12, 15, 10, 30, 0, tzinfo=UTC),
             system_info="KSEF_TEST_SUITE",
         )
         .seller(
@@ -147,7 +147,7 @@ def test_new_fa3_vat_builder_sample_8_margin_matches_loaded_sample() -> None:
     builder = StandardInvoiceBuilder()
     _ = (
         builder.header(
-            generation_timestamp=datetime(2026, 2, 15, 9, 30, 47, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2026, 2, 15, 9, 30, 47, tzinfo=UTC),
             system_info="Samplofaktur",
         )
         .seller(
@@ -243,7 +243,7 @@ def test_new_fa3_vat_builder_sample_9_exempt_mix_matches_loaded_sample() -> None
     builder = StandardInvoiceBuilder()
     _ = (
         builder.header(
-            generation_timestamp=datetime(2026, 2, 15, 9, 30, 47, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2026, 2, 15, 9, 30, 47, tzinfo=UTC),
             system_info="Samplofaktur",
         )
         .seller(
@@ -352,7 +352,7 @@ def test_new_fa3_vat_builder_sample_ksef_05_wdt_matches_loaded_sample() -> None:
     builder = StandardInvoiceBuilder()
     _ = (
         builder.header(
-            generation_timestamp=datetime(2025, 12, 10, 8, 0, 0, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2025, 12, 10, 8, 0, 0, tzinfo=UTC),
             system_info="KSEF_TEST_SUITE",
         )
         .seller(
@@ -457,7 +457,7 @@ def test_new_fa3_vat_builder_sample_ksef_06_export_matches_loaded_sample() -> No
     builder = StandardInvoiceBuilder()
     _ = (
         builder.header(
-            generation_timestamp=datetime(2025, 12, 12, 12, 0, 0, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2025, 12, 12, 12, 0, 0, tzinfo=UTC),
             system_info="KSEF_TEST_SUITE",
         )
         .seller(

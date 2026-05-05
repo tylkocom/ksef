@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, UTC
 from decimal import Decimal
 
 from xsdata.models.datatype import XmlDateTime
@@ -52,8 +52,8 @@ def make_transaction_conditions() -> TransactionConditions:
                 transport_order_number="TR/09/26",
                 cargo_type="carton",
                 packaging_unit="1 karton/40 sztuk",
-                transport_start=datetime(2026, 9, 25, 7, 34, tzinfo=timezone.utc),
-                transport_end=datetime(2026, 9, 25, 21, 40, tzinfo=timezone.utc),
+                transport_start=datetime(2026, 9, 25, 7, 34, tzinfo=UTC),
+                transport_end=datetime(2026, 9, 25, 21, 40, tzinfo=UTC),
                 shipping_from=TransactionAddress(
                     country_code="PL",
                     address_line_1="ul. Zielona 5",
@@ -181,6 +181,6 @@ def test_transaction_from_spec_restores_domain_model() -> None:
     assert mapped.transports[0].shipping_to is not None
     assert mapped.transports[0].shipping_to.address_line_2 == "22-222 Gdynia"
     assert mapped.transports[0].transport_start == datetime(
-        2026, 9, 25, 7, 34, tzinfo=timezone.utc
+        2026, 9, 25, 7, 34, tzinfo=UTC
     )
     assert mapped.intermediary_entity is True

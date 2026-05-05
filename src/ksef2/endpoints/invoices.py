@@ -1,4 +1,5 @@
-from typing import NotRequired, TypedDict, Unpack, final
+from typing import NotRequired, Unpack, final
+from typing_extensions import TypedDict
 
 from pydantic import TypeAdapter
 
@@ -10,20 +11,15 @@ from ksef2.infra.schema.api.supp.invoices import (
     SendInvoiceRequest,
 )
 
-InvoiceMetadataQueryParams = TypedDict(
-    "InvoiceMetadataQueryParams",
-    {
-        "sortOrder": NotRequired[str | None],
-        "pageOffset": NotRequired[int | None],
-        "pageSize": NotRequired[int | None],
-    },
-)
-SessionInvoiceListQueryParams = TypedDict(
-    "SessionInvoiceListQueryParams",
-    {
-        "pageSize": int,
-    },
-)
+
+class InvoiceMetadataQueryParams(TypedDict):
+    sortOrder: NotRequired[str | None]
+    pageOffset: NotRequired[int | None]
+    pageSize: NotRequired[int | None]
+
+
+class SessionInvoiceListQueryParams(TypedDict):
+    pageSize: int
 
 
 @final

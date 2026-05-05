@@ -1,5 +1,6 @@
 from decimal import Decimal
-from typing import Annotated, Self, TypedDict
+from typing import Annotated, Self, Generic, TypeVar
+from typing_extensions import TypedDict
 from collections.abc import Callable
 
 from pydantic import TypeAdapter
@@ -10,6 +11,9 @@ from ksef2.domain.models.fa3 import (
     SettlementDeduction,
 )
 from ksef2.services.builders.fa3.metadata import builder_param
+
+
+TParent = TypeVar("TParent")
 
 
 class SettlementState(TypedDict):
@@ -35,7 +39,7 @@ def _default_state() -> SettlementState:
     }
 
 
-class SettlementBuilder[TParent]:
+class SettlementBuilder(Generic[TParent]):
     def __init__(
         self,
         parent: TParent,

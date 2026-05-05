@@ -1,6 +1,6 @@
 from typing import Literal
 
-type CurrencyCodes = Literal[
+CurrencyCodes = Literal[
     "AED",
     "AFN",
     "ALL",

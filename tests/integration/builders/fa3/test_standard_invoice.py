@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, UTC
 from decimal import Decimal
 
 import pytest
@@ -20,7 +20,7 @@ def test_new_fa3_standard_builder_sample_1_matches_loaded_sample() -> None:
     builder = StandardInvoiceBuilder()
     _ = (
         builder.header(
-            generation_timestamp=datetime(2026, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2026, 2, 1, 0, 0, 0, tzinfo=UTC),
             system_info="SamploFaktur",
         )
         .seller(

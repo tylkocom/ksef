@@ -1,4 +1,5 @@
-from typing import cast, Callable
+from typing import cast
+from collections.abc import Callable
 
 import pytest
 

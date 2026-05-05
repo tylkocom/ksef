@@ -6,7 +6,7 @@ from typing import Literal
 
 from ksef2.domain.models.base import KSeFBaseModel
 
-type TokenPermission = Literal[
+TokenPermission = Literal[
     "invoice_read",
     "invoice_write",
     "introspection",
@@ -16,13 +16,11 @@ type TokenPermission = Literal[
     "enforcement_operations",
 ]
 
-type TokenStatus = Literal["pending", "active", "revoking", "revoked", "failed"]
+TokenStatus = Literal["pending", "active", "revoking", "revoked", "failed"]
 
-type TokenAuthorIdentifierType = Literal["nip", "pesel", "fingerprint"]
+TokenAuthorIdentifierType = Literal["nip", "pesel", "fingerprint"]
 
-type TokenContextIdentifierType = Literal[
-    "nip", "internal_id", "nip_vat_ue", "peppol_id"
-]
+TokenContextIdentifierType = Literal["nip", "internal_id", "nip_vat_ue", "peppol_id"]
 
 
 class TokenPermissionEnum(StrEnum):

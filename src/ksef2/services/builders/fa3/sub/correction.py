@@ -1,5 +1,6 @@
 from datetime import date
-from typing import Annotated, Self, TypedDict
+from typing import Annotated, Self, Generic, TypeVar
+from typing_extensions import TypedDict
 from collections.abc import Callable
 
 from pydantic import TypeAdapter
@@ -13,6 +14,9 @@ from ksef2.domain.models.fa3.body.correction import (
 )
 from ksef2.domain.models.fa3.party import InvoiceAddress
 from ksef2.services.builders.fa3.metadata import builder_param
+
+
+TParent = TypeVar("TParent")
 
 
 class InvoiceCorrectionState(TypedDict):
@@ -54,7 +58,7 @@ def _build_address(
     )
 
 
-class CorrectionBuilder[TParent]:
+class CorrectionBuilder(Generic[TParent]):
     def __init__(
         self,
         parent: TParent,

@@ -1,6 +1,7 @@
 """Authentication endpoints."""
 
-from typing import NotRequired, TypedDict, Unpack, final
+from typing import NotRequired, Unpack, final
+from typing_extensions import TypedDict
 
 from pydantic import TypeAdapter
 
@@ -9,19 +10,13 @@ from ksef2.endpoints.base import BaseEndpoints
 from ksef2.infra.schema.api import spec
 from ksef2.infra.schema.api.supp.auth import InitTokenAuthenticationRequest
 
-AuthSessionsQueryParams = TypedDict(
-    "AuthSessionsQueryParams",
-    {
-        "pageSize": NotRequired[int | None],
-    },
-)
 
-XadesAuthParams = TypedDict(
-    "XadesAuthParams",
-    {
-        "verifyCertificateChain": NotRequired[str | None],
-    },
-)
+class AuthSessionsQueryParams(TypedDict):
+    pageSize: NotRequired[int | None]
+
+
+class XadesAuthParams(TypedDict):
+    verifyCertificateChain: NotRequired[str | None]
 
 
 @final

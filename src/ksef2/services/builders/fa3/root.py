@@ -1,7 +1,8 @@
 from collections.abc import Sequence
 from datetime import datetime
 from decimal import Decimal
-from typing import Annotated, Self, override
+from typing import Annotated, Self
+from typing_extensions import override
 
 from xsdata.formats.dataclass.serializers import XmlSerializer
 from xsdata.formats.dataclass.serializers.config import SerializerConfig

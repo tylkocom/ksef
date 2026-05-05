@@ -1,4 +1,5 @@
-from typing import final, override
+from typing import final
+from typing_extensions import override
 
 import httpx
 

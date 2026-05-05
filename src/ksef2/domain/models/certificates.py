@@ -8,11 +8,11 @@ from pydantic import Field, TypeAdapter
 
 from ksef2.domain.models.base import KSeFBaseModel
 
-type IdentifierType = Literal["nip", "pesel", "fingerprint"]
-type RevocationReason = Literal["unspecified", "superseded", "key_compromise"]
-type CertificateTypeValue = Literal["authentication", "offline"]
-type CertificateStatusValue = Literal["active", "blocked", "revoked", "expired"]
-type CertificateSerialNumber = Annotated[
+IdentifierType = Literal["nip", "pesel", "fingerprint"]
+RevocationReason = Literal["unspecified", "superseded", "key_compromise"]
+CertificateTypeValue = Literal["authentication", "offline"]
+CertificateStatusValue = Literal["active", "blocked", "revoked", "expired"]
+CertificateSerialNumber = Annotated[
     str, Field(max_length=16, min_length=16, pattern="^[0-9A-F]{16}$")
 ]
 

@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from ksef2.core import exceptions
 from ksef2.domain.models import encryption
@@ -41,13 +41,13 @@ class CertificateStore:
         *,
         at: datetime | None = None,
     ) -> list[encryption.PublicKeyCertificate]:
-        def make_aware(dt: datetime, tz=timezone.utc) -> datetime:
+        def make_aware(dt: datetime, tz=UTC) -> datetime:
             """Convert naive datetime to aware, or return if already aware"""
             if dt.tzinfo is None:
                 return dt.replace(tzinfo=tz)
             return dt
 
-        now = make_aware(at) if at else datetime.now(tz=timezone.utc)
+        now = make_aware(at) if at else datetime.now(tz=UTC)
 
         return [
             cert

@@ -1,7 +1,8 @@
 from datetime import date, datetime
 from decimal import Decimal
 from collections.abc import Sequence
-from typing import Annotated, Self, TypedDict
+from typing import Annotated, Self, Generic, TypeVar
+from typing_extensions import TypedDict
 from collections.abc import Callable
 
 from pydantic import TypeAdapter
@@ -17,6 +18,9 @@ from ksef2.domain.models.fa3.body import (
     TransportType,
 )
 from ksef2.services.builders.fa3.metadata import builder_param
+
+
+TParent = TypeVar("TParent")
 
 
 class TransactionState(TypedDict):
@@ -46,7 +50,7 @@ def _default_state() -> TransactionState:
     }
 
 
-class TransactionBuilder[TParent]:
+class TransactionBuilder(Generic[TParent]):
     def __init__(
         self,
         parent: TParent,

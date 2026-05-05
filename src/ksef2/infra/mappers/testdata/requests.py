@@ -39,12 +39,10 @@ class ValidTestDataEnums(Enum):
 
 VALID_TESTDATA_ENUMS = [v.value for v in ValidTestDataEnums.__members__.values()]
 
-type SuppSubjectType = Literal["EnforcementAuthority", "VatGroup", "JST"]
-type SuppIdentifierType = Literal["Nip", "Pesel", "Fingerprint", "System"]
-type SuppAuthContextIdentifierType = Literal[
-    "Nip", "InternalId", "NipVatUe", "PeppolId"
-]
-type SuppPermissionType = Literal[
+SuppSubjectType = Literal["EnforcementAuthority", "VatGroup", "JST"]
+SuppIdentifierType = Literal["Nip", "Pesel", "Fingerprint", "System"]
+SuppAuthContextIdentifierType = Literal["Nip", "InternalId", "NipVatUe", "PeppolId"]
+SuppPermissionType = Literal[
     "InvoiceRead",
     "InvoiceWrite",
     "PefInvoiceWrite",

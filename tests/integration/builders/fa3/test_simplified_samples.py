@@ -1,5 +1,5 @@
 import pytest
-from datetime import date, datetime, timezone
+from datetime import date, datetime, UTC
 from decimal import Decimal
 from xsdata.formats.dataclass.parsers import XmlParser
 
@@ -34,7 +34,7 @@ def test_new_fa3_simplified_sample_15() -> None:
     builder = StandardInvoiceBuilder()
     _ = (
         builder.header(
-            generation_timestamp=datetime(2026, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2026, 2, 1, 0, 0, 0, tzinfo=UTC),
             system_info="SamploFaktur",
         )
         .seller(
@@ -80,7 +80,7 @@ def test_new_fa3_simplified_sample_16() -> None:
     builder = StandardInvoiceBuilder()
     _ = (
         builder.header(
-            generation_timestamp=datetime(2026, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2026, 2, 1, 0, 0, 0, tzinfo=UTC),
             system_info="SamploFaktur",
         )
         .seller(
@@ -122,7 +122,7 @@ def test_new_fa3_simplified_sample_ksef_04_upr() -> None:
     builder = StandardInvoiceBuilder()
     _ = (
         builder.header(
-            generation_timestamp=datetime(2025, 12, 5, 11, 30, 0, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2025, 12, 5, 11, 30, 0, tzinfo=UTC),
             system_info="KSEF_TEST_SUITE",
         )
         .seller(

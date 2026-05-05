@@ -1,6 +1,7 @@
 import asyncio
 from collections.abc import Awaitable, Callable
-from typing import cast, final, override
+from typing import cast, final
+from typing_extensions import override
 
 import httpx
 

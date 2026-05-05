@@ -1,6 +1,7 @@
 from datetime import date
 from decimal import Decimal
-from typing import Annotated, Self, TypedDict
+from typing import Annotated, Self
+from typing_extensions import TypedDict
 
 from pydantic import TypeAdapter
 

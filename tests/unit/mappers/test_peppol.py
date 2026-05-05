@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from polyfactory import BaseFactory
 
@@ -12,7 +12,7 @@ class TestPeppolMapper:
         mapped_input = spec.PeppolProvider(
             id="PPL123456",
             name="Test Provider",
-            dateCreated=datetime(2025, 1, 1, tzinfo=timezone.utc),
+            dateCreated=datetime(2025, 1, 1, tzinfo=UTC),
         )
         output = from_spec(mapped_input)
 
@@ -26,7 +26,7 @@ class TestPeppolMapper:
         mapped_input = spec.PeppolProvider(
             id="PPL123456",
             name=None,
-            dateCreated=datetime(2025, 1, 1, tzinfo=timezone.utc),
+            dateCreated=datetime(2025, 1, 1, tzinfo=UTC),
         )
         output = from_spec(mapped_input)
 

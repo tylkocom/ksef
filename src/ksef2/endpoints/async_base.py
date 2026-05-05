@@ -2,7 +2,7 @@
 
 import abc
 from collections.abc import Mapping
-from typing import ClassVar
+from typing import ClassVar, TypeVar
 
 import httpx
 from pydantic import BaseModel
@@ -17,6 +17,9 @@ from ksef2.endpoints.shared import (
 )
 
 
+T = TypeVar("T", bound=BaseModel)
+
+
 class AsyncBaseEndpoints(abc.ABC):
     _PARAMS_ADAPTER: ClassVar[QueryParamsAdapter] = DEFAULT_PARAMS_ADAPTER
 
@@ -24,15 +27,11 @@ class AsyncBaseEndpoints(abc.ABC):
         self._transport = transport
 
     @classmethod
-    def _parse[T: BaseModel](
-        cls, response: httpx.Response, response_type: type[T]
-    ) -> T:
+    def _parse(cls, response: httpx.Response, response_type: type[T]) -> T:
         return parse_response(response, response_type)
 
     @classmethod
-    def _parse_list[T: BaseModel](
-        cls, response: httpx.Response, response_type: type[T]
-    ) -> list[T]:
+    def _parse_list(cls, response: httpx.Response, response_type: type[T]) -> list[T]:
         return parse_response_list(response, response_type)
 
     def build_params(

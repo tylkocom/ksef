@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from unittest.mock import MagicMock, patch
 
 from polyfactory import BaseFactory
@@ -140,7 +140,7 @@ class TestEncryptionAndSessions:
             json_body=[
                 public_key_cert.build(
                     usage=[spec.PublicKeyCertificateUsage.SymmetricKeyEncryption],
-                    validTo=datetime.now(timezone.utc) + timedelta(days=30),
+                    validTo=datetime.now(UTC) + timedelta(days=30),
                 ).model_dump(mode="json")
             ]
         )

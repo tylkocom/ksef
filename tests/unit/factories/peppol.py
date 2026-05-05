@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from ksef2.domain.models import peppol
 from ksef2.infra.schema.api import spec
@@ -9,7 +9,7 @@ from polyfactory.pytest_plugin import register_fixture
 class PeppolProviderFactory(ModelFactory[spec.PeppolProvider]):
     id: str = "PPL123456"
     name: str = "Test Peppol Provider"
-    dateCreated: datetime = datetime(2025, 1, 1, tzinfo=timezone.utc)
+    dateCreated: datetime = datetime(2025, 1, 1, tzinfo=UTC)
 
 
 @register_fixture(name="peppol_providers_resp")
