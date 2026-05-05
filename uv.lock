@@ -704,7 +704,7 @@ wheels = [
 ]
 
 [[package]]
-name = "ksef-client"
+name = "ksef2"
 version = "0.13.2"
 source = { editable = "." }
 dependencies = [
