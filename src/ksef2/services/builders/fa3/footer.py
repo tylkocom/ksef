@@ -1,10 +1,14 @@
-from typing import Annotated, Self, TypedDict
+from typing import Annotated, Self, Generic, TypeVar
+from typing_extensions import TypedDict
 from collections.abc import Callable
 
 from pydantic import TypeAdapter
 
 from ksef2.domain.models.fa3 import FooterRegistry, InvoiceFooter
 from ksef2.services.builders.fa3.metadata import builder_param
+
+
+TParent = TypeVar("TParent")
 
 
 class InvoiceFooterState(TypedDict):
@@ -22,7 +26,7 @@ def _default_state() -> InvoiceFooterState:
     }
 
 
-class FooterBuilder[TParent]:
+class FooterBuilder(Generic[TParent]):
     def __init__(
         self,
         parent: TParent,

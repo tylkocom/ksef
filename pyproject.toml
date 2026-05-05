@@ -25,6 +25,7 @@ dependencies = [
     "camel-converter>=5.1.0",
     "pytest-cov>=7.1.0",
     "xsdata>=26.1",
+    "typing-extensions>=4.15.0",
 ]
 
 [dependency-groups]
@@ -61,6 +62,9 @@ version_files = [
     "src/ksef2/__version__.py"
 ]
 
+
+[tool.ruff]
+target-version = "py311"
 
 [tool.ruff.lint]
 ignore = ["E731", "E402"]

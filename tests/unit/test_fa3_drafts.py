@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, UTC
 from decimal import Decimal
 
 from ksef2.fa3 import FA3InvoiceBuilder, KsefInvoiceDraft, VatRate
@@ -8,7 +8,7 @@ def test_fa3_builder_can_roundtrip_partial_draft_json() -> None:
     draft_json = (
         FA3InvoiceBuilder()
         .header(
-            generation_timestamp=datetime(2026, 4, 8, 12, 0, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2026, 4, 8, 12, 0, tzinfo=UTC),
             system_info="draft json test",
         )
         .seller(
@@ -58,7 +58,7 @@ def test_fa3_builder_can_reload_existing_sections_and_continue_editing() -> None
     builder = FA3InvoiceBuilder()
     _ = (
         builder.header(
-            generation_timestamp=datetime(2026, 4, 8, 12, 0, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2026, 4, 8, 12, 0, tzinfo=UTC),
             system_info="draft reload test",
         )
         .seller(
@@ -130,7 +130,7 @@ def test_fa3_draft_can_be_created_from_built_invoice() -> None:
     invoice = (
         FA3InvoiceBuilder()
         .header(
-            generation_timestamp=datetime(2026, 4, 8, 12, 0, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2026, 4, 8, 12, 0, tzinfo=UTC),
             system_info="invoice snapshot test",
         )
         .seller(

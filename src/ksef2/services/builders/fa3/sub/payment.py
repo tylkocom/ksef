@@ -1,6 +1,7 @@
 from datetime import date
 from decimal import Decimal
-from typing import Annotated, Self, TypedDict
+from typing import Annotated, Self, Generic, TypeVar
+from typing_extensions import TypedDict
 from collections.abc import Callable
 
 from pydantic import TypeAdapter
@@ -16,6 +17,9 @@ from ksef2.domain.models.fa3.body import (
     PaymentTermDescription,
 )
 from ksef2.services.builders.fa3.metadata import builder_param
+
+
+TParent = TypeVar("TParent")
 
 
 class InvoicePaymentState(TypedDict):
@@ -106,7 +110,7 @@ def _default_state() -> InvoicePaymentState:
     }
 
 
-class PaymentBuilder[TParent]:
+class PaymentBuilder(Generic[TParent]):
     def __init__(
         self,
         parent: TParent,

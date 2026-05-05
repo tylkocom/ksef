@@ -1,5 +1,5 @@
 import asyncio
-from datetime import date, datetime, timezone
+from datetime import date, datetime, UTC
 
 from polyfactory import BaseFactory
 
@@ -29,7 +29,7 @@ class TestAsyncTestDataClient:
     ) -> None:
         client = AsyncTestDataClient(async_fake_transport)
         request = domain_td_create_subject_req.build(
-            created_date=datetime(2026, 3, 5, 10, 0, tzinfo=timezone.utc),
+            created_date=datetime(2026, 3, 5, 10, 0, tzinfo=UTC),
         )
         async_fake_transport.enqueue({})
 

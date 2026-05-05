@@ -6,9 +6,9 @@ from typing import Literal
 
 from ksef2.domain.models.base import KSeFBaseModel
 
-type ContextIdentifierType = Literal["nip", "internal_id", "nip_vat_ue", "peppol_id"]
+ContextIdentifierType = Literal["nip", "internal_id", "nip_vat_ue", "peppol_id"]
 
-type AuthenticationMethod = Literal[
+AuthenticationMethod = Literal[
     "token",
     "trusted_profile",
     "internal_certificate",
@@ -19,7 +19,7 @@ type AuthenticationMethod = Literal[
     "ksef_certificate",
 ]
 
-type AuthenticationMethodCategory = Literal[
+AuthenticationMethodCategory = Literal[
     "xades_signature",
     "national_node",
     "token",

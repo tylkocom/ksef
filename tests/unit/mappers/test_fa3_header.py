@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from zoneinfo import ZoneInfo
 
 from xsdata.models.datatype import XmlDateTime
@@ -15,7 +15,7 @@ from ksef2.infra.schema.fa3.models.schemat import (
 def test_header_to_spec_maps_fa3_header_fields() -> None:
     output = header_to_spec(
         InvoiceHeader(
-            generation_timestamp=datetime(2026, 2, 1, 10, 15, 30, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2026, 2, 1, 10, 15, 30, tzinfo=UTC),
             system_info="ACME ERP",
         )
     )
@@ -26,7 +26,7 @@ def test_header_to_spec_maps_fa3_header_fields() -> None:
     assert output.kod_formularza.wersja_schemy == "1-0E"
     assert output.wariant_formularza == TnaglowekWariantFormularza.VALUE_3
     assert output.data_wytworzenia_fa == XmlDateTime.from_datetime(
-        datetime(2026, 2, 1, 10, 15, 30, tzinfo=timezone.utc)
+        datetime(2026, 2, 1, 10, 15, 30, tzinfo=UTC)
     )
     assert output.system_info == "ACME ERP"
 

@@ -1,4 +1,5 @@
-from typing import cast, Callable
+from typing import cast
+from collections.abc import Callable
 from urllib.parse import urlencode
 
 import pytest
@@ -505,7 +506,7 @@ class TestQueryPermissionsEndpoints:
         assert call.path == target_path
         assert call.json == request.model_dump(mode="json")
         assert call.params is not None
-        assert all((param in call.params for param in params.keys()))
+        assert all(param in call.params for param in params.keys())
         assert call.headers is None, "Query endpoints dont require custom headers"
         assert fake_transport.responses == []
 
@@ -594,7 +595,7 @@ class TestQueryPermissionsEndpoints:
         assert len(fake_transport.calls) == 1
         call = fake_transport.calls[0]
         assert call.params is not None
-        assert all((param in call.params for param in params.keys()))
+        assert all(param in call.params for param in params.keys())
 
     @pytest.mark.parametrize(
         ["method", "req_factory"],

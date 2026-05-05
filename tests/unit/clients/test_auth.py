@@ -40,7 +40,7 @@ def _generate_ec_test_certificate(
             x509.NameAttribute(NameOID.COUNTRY_NAME, "PL"),
         ]
     )
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
     cert = (
         x509.CertificateBuilder()
         .subject_name(subject)

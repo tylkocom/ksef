@@ -1,5 +1,6 @@
 from collections.abc import Mapping
-from typing import NotRequired, Protocol, TypedDict, cast
+from typing import NotRequired, Protocol, cast, TypeVar, runtime_checkable
+from typing_extensions import TypedDict
 from urllib.parse import urlencode
 
 import httpx
@@ -7,15 +8,15 @@ from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from ksef2.core import codecs, exceptions
 
-OffsetPaginationQueryParams = TypedDict(
-    "OffsetPaginationQueryParams",
-    {
-        "pageOffset": NotRequired[int | None],
-        "pageSize": NotRequired[int | None],
-    },
-)
+T = TypeVar("T", bound=BaseModel)
 
 
+class OffsetPaginationQueryParams(TypedDict):
+    pageOffset: NotRequired[int | None]
+    pageSize: NotRequired[int | None]
+
+
+@runtime_checkable
 class QueryParamsAdapter(Protocol):
     def validate_python(self, value: object, /) -> Mapping[str, object]: ...
 
@@ -25,16 +26,14 @@ DEFAULT_PARAMS_ADAPTER = cast(
 )
 
 
-def parse_response[T: BaseModel](response: httpx.Response, response_type: type[T]) -> T:
+def parse_response(response: httpx.Response, response_type: type[T]) -> T:
     try:
         return codecs.JsonResponseCodec.parse(response, response_type)
     except ValidationError as e:
         raise exceptions.KSeFValidationError("Invalid response payload") from e
 
 
-def parse_response_list[T: BaseModel](
-    response: httpx.Response, response_type: type[T]
-) -> list[T]:
+def parse_response_list(response: httpx.Response, response_type: type[T]) -> list[T]:
     try:
         return codecs.JsonResponseCodec.parse_list(response, response_type)
     except ValidationError as e:

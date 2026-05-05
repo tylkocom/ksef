@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from ksef2.domain.models import permissions as domain_permissions
 from ksef2.infra.schema.api import spec
@@ -6,7 +6,7 @@ from polyfactory.factories.pydantic_factory import ModelFactory
 from polyfactory.pytest_plugin import register_fixture
 
 _UUID = "123e4567-e89b-12d3-a456-426614174000"
-_START = datetime(2025, 1, 1, 12, 0, tzinfo=timezone.utc)
+_START = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
 
 
 @register_fixture(name="perm_grant_person_req")

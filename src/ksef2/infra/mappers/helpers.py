@@ -1,9 +1,14 @@
 """Shared helpers used across request and response mappers."""
 
 from collections.abc import Sequence
-from datetime import datetime, timezone, date
+from datetime import datetime, date, UTC
 from enum import StrEnum
 from zoneinfo import ZoneInfo
+
+from typing import TypeVar
+
+K = TypeVar("K")
+V = TypeVar("V")
 
 
 def to_aware_datetime(dt: str | datetime | date) -> datetime:
@@ -11,14 +16,14 @@ def to_aware_datetime(dt: str | datetime | date) -> datetime:
     if isinstance(dt, datetime):
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=ZoneInfo("Europe/Warsaw"))
-        return dt.astimezone(timezone.utc)
+        return dt.astimezone(UTC)
     elif isinstance(dt, date):
-        return datetime.combine(dt, datetime.min.time()).astimezone(timezone.utc)
+        return datetime.combine(dt, datetime.min.time()).astimezone(UTC)
     else:
         return to_aware_datetime(datetime.fromisoformat(dt))
 
 
-def lookup[_K, _V](mapping: dict[_K, _V], key: _K, label: str) -> _V:
+def lookup(mapping: dict[K, V], key: K, label: str) -> V:
     """Return a mapping value or raise a labeled ``ValueError``."""
     try:
         return mapping[key]

@@ -1,4 +1,4 @@
-from typing import Annotated, Self
+from typing import Annotated, Self, Generic, TypeVar, Any
 from collections.abc import Callable
 
 from ksef2.domain.models.fa3.attachment import (
@@ -8,6 +8,9 @@ from ksef2.domain.models.fa3.attachment import (
     ValueType,
 )
 from ksef2.services.builders.fa3.metadata import builder_param
+
+
+TParent = TypeVar("TParent")
 
 
 class AttachmentTableBuilder:
@@ -199,7 +202,7 @@ class AttachmentTableBuilder:
 class DataBlockBuilder:
     def __init__(
         self,
-        parent: "AttachmentBuilder[object] | None" = None,
+        parent: "AttachmentBuilder[Any] | None" = None,
         existing_state: DataBlock | None = None,
     ) -> None:
         self._parent = parent
@@ -313,7 +316,7 @@ class DataBlockBuilder:
             and not self._tables
         )
 
-    def done(self) -> "AttachmentBuilder[object]":
+    def done(self) -> "AttachmentBuilder[Any]":
         if self._parent is None:
             raise ValueError(
                 "DataBlockBuilder must have a parent AttachmentBuilder to call done()."
@@ -326,7 +329,7 @@ class DataBlockBuilder:
         return self._parent
 
 
-class AttachmentBuilder[TParent]:
+class AttachmentBuilder(Generic[TParent]):
     def __init__(
         self,
         parent: TParent | None = None,

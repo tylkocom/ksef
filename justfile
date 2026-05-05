@@ -69,7 +69,7 @@ regenerate-models:
       --use-schema-description \
       --use-field-description \
       --disable-timestamp \
-      --target-python-version 3.12 \
+      --target-python-version 3.11 \
       --output src/ksef2/infra/schema/api/spec/models.py
     uv run ruff format src/ksef2/infra/schema/api/spec/models.py
 

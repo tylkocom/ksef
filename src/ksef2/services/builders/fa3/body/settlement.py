@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Self, Generic, TypeVar
 from collections.abc import Callable
 
 from ksef2.domain.models.fa3.body import InvoiceType
@@ -12,7 +12,11 @@ from ksef2.services.builders.fa3.sub.settlement import SettlementBuilderMixin
 from ksef2.services.builders.fa3.sub.transaction import TransactionBuilderMixin
 
 
-class SettlementBodyBuilder[TParent](
+TParent = TypeVar("TParent")
+
+
+class SettlementBodyBuilder(
+    Generic[TParent],
     BaseBodyBuilder,
     RowsBuilderMixin,
     PaymentBuilderMixin,

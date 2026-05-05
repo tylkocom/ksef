@@ -11,7 +11,9 @@ Run with:
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Generator, TypedDict
+from typing import TYPE_CHECKING
+from typing_extensions import TypedDict
+from collections.abc import Generator
 
 import pytest
 
@@ -41,15 +43,12 @@ from ksef2.domain.models.permissions import (
 if TYPE_CHECKING:
     from tests.integration.conftest import KSeFCredentials
 
-PermissionContext = TypedDict(
-    "PermissionContext",
-    {
-        "client": Client,
-        "auth": AuthenticatedClient,
-        "session": OnlineSessionClient,
-        "seller_nip": str,
-    },
-)
+
+class PermissionContext(TypedDict):
+    client: Client
+    auth: AuthenticatedClient
+    session: OnlineSessionClient
+    seller_nip: str
 
 
 def _wait_for_permission_operation(

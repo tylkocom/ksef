@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 from ksef2.domain.models import auth as domain_auth
 from ksef2.infra.schema.api import spec
@@ -9,7 +9,7 @@ from tests.unit.helpers import VALID_BASE64
 
 
 def _future_time(hours: int = 1) -> datetime:
-    return datetime.now(timezone.utc) + timedelta(hours=hours)
+    return datetime.now(UTC) + timedelta(hours=hours)
 
 
 class AuthenticationMethodInfoFactory(ModelFactory[spec.AuthenticationMethodInfo]):

@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 from unittest.mock import patch
 
@@ -38,7 +38,7 @@ def _ready_export_package() -> spec.InvoicePackage:
                     "partHash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
                     "encryptedPartSize": 128,
                     "encryptedPartHash": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=",
-                    "expirationDate": datetime.now(timezone.utc),
+                    "expirationDate": datetime.now(UTC),
                 }
             ],
             "isTruncated": False,
@@ -61,7 +61,7 @@ def _invoice_package_with_part_name(part_name: str) -> invoices.InvoicePackage:
                     "part_hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
                     "encrypted_part_size": 128,
                     "encrypted_part_hash": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=",
-                    "expiration_date": datetime.now(timezone.utc),
+                    "expiration_date": datetime.now(UTC),
                 }
             ],
             "is_truncated": False,

@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, UTC
 import pytest
 from decimal import Decimal
 from xsdata.formats.dataclass.parsers import XmlParser
@@ -21,7 +21,7 @@ def test_new_fa3_correction_builder_sample_2_matches_loaded_sample() -> None:
     builder = StandardInvoiceBuilder()
     _ = (
         builder.header(
-            generation_timestamp=datetime(2026, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2026, 2, 1, 0, 0, 0, tzinfo=UTC),
             system_info="SamploFaktur",
         )
         .seller(
@@ -124,7 +124,7 @@ def test_new_fa3_correction_samples_3() -> None:
     builder = StandardInvoiceBuilder()
     _ = (
         builder.header(
-            generation_timestamp=datetime(2026, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2026, 2, 1, 0, 0, 0, tzinfo=UTC),
             system_info="SamploFaktur",
         )
         .seller(
@@ -218,7 +218,7 @@ def test_new_fa3_correction_samples_5() -> None:
     builder = StandardInvoiceBuilder()
     _ = (
         builder.header(
-            generation_timestamp=datetime(2026, 2, 15, 9, 30, 47, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2026, 2, 15, 9, 30, 47, tzinfo=UTC),
             system_info="Samplofaktur",
         )
         .seller(
@@ -303,7 +303,7 @@ def test_new_fa3_correction_samples_6() -> None:
     builder = StandardInvoiceBuilder()
     _ = (
         builder.header(
-            generation_timestamp=datetime(2026, 7, 15, 9, 30, 47, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2026, 7, 15, 9, 30, 47, tzinfo=UTC),
             system_info="Samplofaktur",
         )
         .seller(
@@ -411,7 +411,7 @@ def test_new_fa3_correction_samples_7() -> None:
     builder = StandardInvoiceBuilder()
     _ = (
         builder.header(
-            generation_timestamp=datetime(2026, 7, 15, 9, 30, 47, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2026, 7, 15, 9, 30, 47, tzinfo=UTC),
             system_info="Samplofaktur",
         )
         .seller(
@@ -533,7 +533,7 @@ def test_new_fa3_correction_samples_ksef_02_kor() -> None:
     builder = StandardInvoiceBuilder()
     _ = (
         builder.header(
-            generation_timestamp=datetime(2025, 12, 20, 14, 0, 0, tzinfo=timezone.utc),
+            generation_timestamp=datetime(2025, 12, 20, 14, 0, 0, tzinfo=UTC),
             system_info="KSEF_TEST_SUITE",
         )
         .seller(

@@ -1,6 +1,7 @@
 """Token endpoints for managing access tokens."""
 
-from typing import NotRequired, TypedDict, Unpack, final
+from typing import NotRequired, Unpack, final
+from typing_extensions import TypedDict
 
 from pydantic import TypeAdapter
 
@@ -8,16 +9,15 @@ from ksef2.core import routes
 from ksef2.endpoints.base import BaseEndpoints
 from ksef2.infra.schema.api import spec
 
-ListTokensQueryParams = TypedDict(
-    "ListTokensQueryParams",
-    {
-        "status": NotRequired[list[str] | None],
-        "description": NotRequired[str | None],
-        "authorIdentifier": NotRequired[str | None],
-        "authorIdentifierType": NotRequired[str | None],
-        "pageSize": NotRequired[int | None],
-    },
-)
+
+class ListTokensQueryParams(TypedDict):
+    status: NotRequired[list[str] | None]
+    description: NotRequired[str | None]
+    authorIdentifier: NotRequired[str | None]
+    authorIdentifierType: NotRequired[str | None]
+    pageSize: NotRequired[int | None]
+
+
 _LIST_TOKENS_PARAMS = TypeAdapter(ListTokensQueryParams)
 
 

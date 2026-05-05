@@ -1,5 +1,6 @@
 from collections.abc import Mapping
-from typing import final, override
+from typing import final, TypeVar
+from typing_extensions import override
 
 import httpx
 from pydantic import BaseModel, ValidationError
@@ -9,6 +10,8 @@ from ksef2.core.middlewares.base import BaseMiddleware
 from ksef2.core.types import Headers, JsonObject, QueryParamsInput
 from ksef2.infra.mappers import exceptions as mapper
 from ksef2.infra.schema.api import spec
+
+T = TypeVar("T", bound=BaseModel)
 
 _PROBLEM_DETAILS_CONTENT_TYPE = "application/problem+json"
 
@@ -27,7 +30,7 @@ class KSeFExceptionMiddleware(BaseMiddleware):
         self._next = transport
 
     @staticmethod
-    def _try_parse[T: BaseModel](content: str, model: type[T]) -> T | None:
+    def _try_parse(content: str, model: type[T]) -> T | None:
         try:
             return model.model_validate_json(content)
         except (ValidationError, ValueError):

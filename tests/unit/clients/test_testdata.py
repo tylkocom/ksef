@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, UTC
 
 from polyfactory import BaseFactory
 
@@ -28,7 +28,7 @@ class TestTestDataClient:
         domain_td_create_subject_req: BaseFactory[CreateSubjectRequest],
     ) -> None:
         request = domain_td_create_subject_req.build(
-            created_date=datetime(2026, 3, 5, 10, 0, tzinfo=timezone.utc),
+            created_date=datetime(2026, 3, 5, 10, 0, tzinfo=UTC),
         )
         fake_transport.enqueue({})
 

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 from ksef2.domain.models.invoices import (
     ExportHandle,
@@ -11,7 +11,7 @@ from polyfactory.factories.pydantic_factory import ModelFactory
 from polyfactory.factories import DataclassFactory
 from polyfactory.pytest_plugin import register_fixture
 
-_NOW = datetime.now(timezone.utc)
+_NOW = datetime.now(UTC)
 _EARLIER = _NOW - timedelta(days=7)
 
 """
