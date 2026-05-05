@@ -7,7 +7,7 @@ name = "ksef2"
 version = "0.13.2"
 description = "Python SDK and Tools for Poland's KSeF (Krajowy System e-Faktur) API"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11.dev0,<3.12.dev0"
 pythonpath = "src"
 dependencies = [
     "pydantic>=2.12.5",
