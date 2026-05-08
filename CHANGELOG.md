@@ -1,3 +1,17 @@
+## v0.13.3 (2026-05-08)
+
+### Feat
+
+- **api**: add support for new certificate fields introduced in the 2.5.0 API version update
+
+## v0.13.2 (2026-05-04)
+
+### Fix
+
+- eliminate all beartype warnings
+- **fa3**: require country codes for emitted addresses
+- **fa3**: allow omitting system info and third-party country code
+
 ## v0.13.1 (2026-04-23)
 
 ### Fix
