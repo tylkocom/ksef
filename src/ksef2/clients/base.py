@@ -1,5 +1,6 @@
 """Public root client for authenticated and unauthenticated SDK entry points."""
 
+from datetime import date, datetime
 from functools import cached_property
 from types import TracebackType
 from typing import final, Self
@@ -13,6 +14,7 @@ from ksef2.config import Environment, TransportConfig
 from ksef2.core import exceptions, middlewares, stores
 from ksef2.core.http_config import build_http_client_kwargs
 from ksef2.core.http import HttpTransport
+from ksef2.domain.verification_urls import build_invoice_verification_url
 
 
 @final
@@ -92,6 +94,20 @@ class Client:
         """Return the public Peppol provider client."""
         self._ensure_open()
         return peppol.PeppolClient(self._transport)
+
+    def build_invoice_verification_url(
+        self,
+        *,
+        seller_nip: str,
+        issue_date: date | datetime,
+        invoice_hash_base64: str,
+    ) -> str:
+        return build_invoice_verification_url(
+            environment=self._environment,
+            seller_nip=seller_nip,
+            issue_date=issue_date,
+            invoice_hash_base64=invoice_hash_base64,
+        )
 
     def close(self) -> None:
         """Close owned resources and invalidate cached child clients."""

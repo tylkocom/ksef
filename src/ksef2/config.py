@@ -11,6 +11,23 @@ class Environment(Enum):
     def base_url(self) -> str:
         return self.value
 
+    @property
+    def qr_base_url(self) -> str:
+        """Base URL of the KSeF QR portal for this environment.
+
+        Used to build invoice verification (KOD I) and certificate
+        verification (KOD II) URLs as described in the official KSeF
+        QR code specification.
+        """
+        return _QR_BASE_URLS[self]
+
+
+_QR_BASE_URLS: dict[Environment, str] = {
+    Environment.PRODUCTION: "https://qr.ksef.mf.gov.pl",
+    Environment.TEST: "https://qr-test.ksef.mf.gov.pl",
+    Environment.DEMO: "https://qr-demo.ksef.mf.gov.pl",
+}
+
 
 @dataclass(frozen=True, slots=True)
 class TimeoutConfig:

@@ -1,5 +1,6 @@
 """Async root client for authenticated and unauthenticated SDK entry points."""
 
+from datetime import date, datetime
 from functools import cached_property
 from types import TracebackType
 from typing import Self, final
@@ -20,6 +21,7 @@ from ksef2.core.middlewares.async_lifecycle import (
     AsyncClientLifecycleState,
 )
 from ksef2.core.middlewares.async_retry import AsyncRetryMiddleware
+from ksef2.domain.verification_urls import build_invoice_verification_url
 
 
 @final
@@ -98,6 +100,20 @@ class AsyncClient:
                 "testdata is only available for Environment.TEST"
             )
         return AsyncTestDataClient(self._transport)
+
+    def build_invoice_verification_url(
+        self,
+        *,
+        seller_nip: str,
+        issue_date: date | datetime,
+        invoice_hash_base64: str,
+    ) -> str:
+        return build_invoice_verification_url(
+            environment=self._environment,
+            seller_nip=seller_nip,
+            issue_date=issue_date,
+            invoice_hash_base64=invoice_hash_base64,
+        )
 
     async def aclose(self) -> None:
         if self._lifecycle_state.closed:

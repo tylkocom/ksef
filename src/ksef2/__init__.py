@@ -27,6 +27,7 @@ from ksef2.config import (
     TlsConfig,
     TransportConfig,
 )
+from ksef2.domain.verification_urls import build_invoice_verification_url
 
 __all__ = [
     "AsyncClient",
@@ -38,4 +39,5 @@ __all__ = [
     "TimeoutConfig",
     "TlsConfig",
     "TransportConfig",
+    "build_invoice_verification_url",
 ]
