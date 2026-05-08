@@ -1,7 +1,8 @@
-from unittest.mock import MagicMock, patch
+from datetime import date
 
 import httpx
 import pytest
+from unittest.mock import MagicMock, patch
 
 from ksef2.clients.base import Client
 from ksef2.clients.testdata import TestDataClient as KSeFTestDataClient
@@ -101,3 +102,24 @@ class TestClient:
 
         with pytest.raises(KSeFClientClosedError, match="Client is closed"):
             _ = client.authentication
+
+    def test_build_invoice_verification_url_uses_environment(self) -> None:
+        client = Client(environment=Environment.TEST)
+        url = client.build_invoice_verification_url(
+            seller_nip="1111111111",
+            issue_date=date(2026, 2, 1),
+            invoice_hash_base64="UtQp9Gpc51y+u3xApZjIjgkpZ01js+J8KflSPW8WzIE=",
+        )
+        assert url == (
+            "https://qr-test.ksef.mf.gov.pl/invoice/1111111111/"
+            "01-02-2026/UtQp9Gpc51y-u3xApZjIjgkpZ01js-J8KflSPW8WzIE"
+        )
+
+    def test_build_invoice_verification_url_production(self) -> None:
+        client = Client(environment=Environment.PRODUCTION)
+        url = client.build_invoice_verification_url(
+            seller_nip="1111111111",
+            issue_date=date(2026, 2, 1),
+            invoice_hash_base64="UtQp9Gpc51y+u3xApZjIjgkpZ01js+J8KflSPW8WzIE=",
+        )
+        assert url.startswith("https://qr.ksef.mf.gov.pl/invoice/")
