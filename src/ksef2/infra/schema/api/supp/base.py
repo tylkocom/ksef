@@ -2,6 +2,8 @@ from typing import Any
 
 from pydantic import (
     AliasChoices,
+    AliasGenerator,
+    AliasPath,
     BaseModel,
     ConfigDict,
     model_validator,
@@ -12,15 +14,18 @@ from ksef2.logging import get_logger
 logger = get_logger(__name__)
 
 
-def _resolve_aliases(alias: str | AliasChoices | None) -> set[str]:
+_AliasSpec = str | AliasPath | AliasChoices | None
+
+
+def _resolve_aliases(alias: _AliasSpec) -> set[str]:
     """Return all string alternatives from a single alias specification."""
     if alias is None:
         return set()
     if isinstance(alias, str):
         return {alias}
     if isinstance(alias, AliasChoices):
-        return set(alias.choices)
-    return set()
+        return {c for c in alias.choices if isinstance(c, str)}
+    return set()  # AliasPath — nested path, not a flat key
 
 
 def _build_known_keys(cls: type[BaseModel]) -> set[str]:
@@ -33,21 +38,22 @@ def _build_known_keys(cls: type[BaseModel]) -> set[str]:
 
         if field.validation_alias is not None:
             known |= _resolve_aliases(field.validation_alias)
-        elif alias_gen is not None and hasattr(alias_gen, "validation_alias"):
-            va = alias_gen.validation_alias
-            if callable(va):
-                known.add(va(name))
+        elif (
+            isinstance(alias_gen, AliasGenerator)
+            and alias_gen.validation_alias is not None
+        ):
+            va = alias_gen.validation_alias(name)
+            if isinstance(va, str):
+                known.add(va)
 
         if field.alias is not None:
             known |= _resolve_aliases(field.alias)
         elif (
             field.validation_alias is None
-            and alias_gen is not None
-            and hasattr(alias_gen, "alias")
+            and isinstance(alias_gen, AliasGenerator)
+            and alias_gen.alias is not None
         ):
-            a = alias_gen.alias
-            if callable(a):
-                known.add(a(name))
+            known.add(alias_gen.alias(name))
 
     return known
 
