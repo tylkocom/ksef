@@ -62,11 +62,8 @@ def test_set_api_rate_limits_accepts_override_payload(xades_authenticated_contex
     client, auth = xades_authenticated_context
 
     limits = auth.limits.get_api_rate_limits()
-    original_per_second = limits.invoice_send.per_second
 
-    limits.invoice_send.per_second = (
-        original_per_second - 50
-    )  # has to be between 1 and 100
+    limits.invoice_send.per_second = 50  # has to be between 1 and 100
     try:
         auth.limits.set_api_rate_limits(limits=limits)
     finally:
