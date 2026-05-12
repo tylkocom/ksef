@@ -1,4 +1,5 @@
-from pydantic import AwareDatetime
+from pyexpat import model
+from pydantic import AwareDatetime, ConfigDict
 
 from ksef2.infra.schema.api.spec.models import PublicKeyCertificateUsage
 from ksef2.infra.schema.api.supp.base import BaseSupp
@@ -11,3 +12,5 @@ class PublicKeyCertificate(BaseSupp):
     validFrom: AwareDatetime
     validTo: AwareDatetime
     usage: list[PublicKeyCertificateUsage]
+
+    model_config = ConfigDict(extra="ignore")
