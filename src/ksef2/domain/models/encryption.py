@@ -4,8 +4,6 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import ConfigDict
-
 from ksef2.domain.models.base import KSeFBaseModel
 
 CertUsageValue = Literal["ksef_token_encryption", "symmetric_key_encryption"]
@@ -38,5 +36,3 @@ class PublicKeyCertificate(KSeFBaseModel):
     valid_from: datetime
     valid_to: datetime
     usage: list[CertUsage]
-
-    model_config = ConfigDict(extra="ignore")
