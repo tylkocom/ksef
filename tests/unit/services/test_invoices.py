@@ -1,9 +1,16 @@
 from datetime import datetime, timezone
+from unittest.mock import patch
 
 import pytest
 from polyfactory import BaseFactory
 
-from ksef2.core.exceptions import KSeFExportTimeoutError, KSeFInvoiceQueryTimeoutError
+from ksef2.core.exceptions import (
+    ExceptionCode,
+    KSeFApiError,
+    KSeFExportTimeoutError,
+    KSeFInvoiceDownloadTimeoutError,
+    KSeFInvoiceQueryTimeoutError,
+)
 from ksef2.core.stores import CertificateStore
 from ksef2.domain.models import invoices
 from ksef2.infra.schema.api import spec
@@ -38,7 +45,74 @@ def _ready_export_package() -> spec.InvoicePackage:
     )
 
 
+def _not_processed_yet_error() -> KSeFApiError:
+    return KSeFApiError(
+        status_code=400,
+        exception_code=ExceptionCode.NOT_PROCESSED_YET,
+        message="not ready",
+    )
+
+
 class TestInvoicesService:
+    def test_wait_for_invoice_download_retries_until_invoice_is_available(
+        self,
+        fake_transport: FakeTransport,
+    ) -> None:
+        service = _build_service(fake_transport)
+
+        with patch.object(
+            service,
+            "download_invoice",
+            side_effect=[_not_processed_yet_error(), b"<Invoice />"],
+        ) as download_invoice:
+            result = service.wait_for_invoice_download(
+                ksef_number="ksef-123",
+                timeout=1.0,
+                poll_interval=0.0,
+            )
+
+        assert result == b"<Invoice />"
+        assert download_invoice.call_count == 2
+
+    def test_wait_for_invoice_download_raises_on_timeout(
+        self,
+        fake_transport: FakeTransport,
+    ) -> None:
+        service = _build_service(fake_transport)
+
+        with patch.object(
+            service,
+            "download_invoice",
+            side_effect=_not_processed_yet_error(),
+        ):
+            with pytest.raises(KSeFInvoiceDownloadTimeoutError):
+                _ = service.wait_for_invoice_download(
+                    ksef_number="ksef-123",
+                    timeout=0.0,
+                    poll_interval=0.0,
+                )
+
+    def test_wait_for_invoice_download_propagates_non_transient_errors(
+        self,
+        fake_transport: FakeTransport,
+    ) -> None:
+        service = _build_service(fake_transport)
+        bad_request = KSeFApiError(
+            status_code=400,
+            exception_code=ExceptionCode.VALIDATION_ERROR,
+            message="invalid request",
+        )
+
+        with patch.object(service, "download_invoice", side_effect=bad_request):
+            with pytest.raises(KSeFApiError) as exc_info:
+                _ = service.wait_for_invoice_download(
+                    ksef_number="ksef-123",
+                    timeout=1.0,
+                    poll_interval=0.0,
+                )
+
+        assert exc_info.value.exception_code == ExceptionCode.VALIDATION_ERROR
+
     def test_wait_for_invoices_returns_when_metadata_appears(
         self,
         fake_transport: FakeTransport,

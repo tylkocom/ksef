@@ -60,6 +60,39 @@ class InvoicesService:
             ksef_number=ksef_number,
         )
 
+    def wait_for_invoice_download(
+        self,
+        *,
+        ksef_number: str,
+        timeout: float = 120.0,
+        poll_interval: float = 2.0,
+    ) -> bytes:
+        """Poll until KSeF makes a processed invoice available for download."""
+
+        def _poll() -> bytes | None:
+            try:
+                return self.download_invoice(ksef_number=ksef_number)
+            except exceptions.KSeFApiError as exc:
+                if (
+                    exc.status_code == 400
+                    and exc.exception_code == exceptions.ExceptionCode.NOT_PROCESSED_YET
+                ):
+                    return None
+                raise
+
+        result = poll_until(
+            operation=_poll,
+            retry_predicate=lambda invoice: invoice is None,
+            poll_interval=poll_interval,
+            timeout_seconds=timeout,
+            timeout_error_factory=lambda: exceptions.KSeFInvoiceDownloadTimeoutError(
+                ksef_number=ksef_number,
+                timeout=timeout,
+            ),
+        )
+        assert result is not None
+        return result
+
     def schedule_export(
         self,
         *,

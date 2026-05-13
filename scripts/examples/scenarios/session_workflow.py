@@ -109,7 +109,7 @@ def run(config: ExampleConfig) -> None:
                 print(f"UPO size: {len(upo)} bytes")
 
                 print(f"Downloading invoice {status.ksef_number}...")
-                xml_bytes = auth.invoices.download_invoice(
+                xml_bytes = auth.invoices.wait_for_invoice_download(
                     ksef_number=status.ksef_number
                 )
         print(f"Invoice size: {len(xml_bytes)} bytes")

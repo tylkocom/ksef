@@ -156,7 +156,7 @@ def test_download_invoice_returns_xml_bytes(workflow_context):
         pytest.skip("No processed invoice with ksef_number available")
 
     ksef_number = invoices_list.invoices[0].ksef_number
-    xml_bytes = auth.invoices.download_invoice(ksef_number=ksef_number)
+    xml_bytes = auth.invoices.wait_for_invoice_download(ksef_number=ksef_number)
 
     assert isinstance(xml_bytes, bytes)
     assert len(xml_bytes) > 0

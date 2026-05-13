@@ -1,13 +1,19 @@
 import asyncio
 from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
 from polyfactory import BaseFactory
 
-from ksef2.core.exceptions import KSeFExportTimeoutError, KSeFInvoiceQueryTimeoutError
+from ksef2.core.exceptions import (
+    ExceptionCode,
+    KSeFApiError,
+    KSeFExportTimeoutError,
+    KSeFInvoiceDownloadTimeoutError,
+    KSeFInvoiceQueryTimeoutError,
+)
 from ksef2.core.stores import CertificateStore
 from ksef2.domain.models import invoices
 from ksef2.infra.schema.api import spec
@@ -69,7 +75,77 @@ def _invoice_package_with_part_name(part_name: str) -> invoices.InvoicePackage:
     )
 
 
+def _not_processed_yet_error() -> KSeFApiError:
+    return KSeFApiError(
+        status_code=400,
+        exception_code=ExceptionCode.NOT_PROCESSED_YET,
+        message="not ready",
+    )
+
+
 class TestAsyncInvoicesService:
+    def test_wait_for_invoice_download_retries_until_invoice_is_available(
+        self,
+        async_fake_transport: AsyncFakeTransport,
+    ) -> None:
+        service = _build_service(async_fake_transport)
+        download_invoice = AsyncMock(
+            side_effect=[_not_processed_yet_error(), b"<Invoice />"]
+        )
+
+        with patch.object(service, "download_invoice", download_invoice):
+            result = asyncio.run(
+                service.wait_for_invoice_download(
+                    ksef_number="ksef-123",
+                    timeout=1.0,
+                    poll_interval=0.0,
+                )
+            )
+
+        assert result == b"<Invoice />"
+        assert download_invoice.call_count == 2
+
+    def test_wait_for_invoice_download_raises_on_timeout(
+        self,
+        async_fake_transport: AsyncFakeTransport,
+    ) -> None:
+        service = _build_service(async_fake_transport)
+        download_invoice = AsyncMock(side_effect=_not_processed_yet_error())
+
+        with patch.object(service, "download_invoice", download_invoice):
+            with pytest.raises(KSeFInvoiceDownloadTimeoutError):
+                _ = asyncio.run(
+                    service.wait_for_invoice_download(
+                        ksef_number="ksef-123",
+                        timeout=0.0,
+                        poll_interval=0.0,
+                    )
+                )
+
+    def test_wait_for_invoice_download_propagates_non_transient_errors(
+        self,
+        async_fake_transport: AsyncFakeTransport,
+    ) -> None:
+        service = _build_service(async_fake_transport)
+        bad_request = KSeFApiError(
+            status_code=400,
+            exception_code=ExceptionCode.VALIDATION_ERROR,
+            message="invalid request",
+        )
+        download_invoice = AsyncMock(side_effect=bad_request)
+
+        with patch.object(service, "download_invoice", download_invoice):
+            with pytest.raises(KSeFApiError) as exc_info:
+                _ = asyncio.run(
+                    service.wait_for_invoice_download(
+                        ksef_number="ksef-123",
+                        timeout=1.0,
+                        poll_interval=0.0,
+                    )
+                )
+
+        assert exc_info.value.exception_code == ExceptionCode.VALIDATION_ERROR
+
     @pytest.mark.parametrize(
         ("part_name", "expected_name"),
         [

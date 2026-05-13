@@ -67,7 +67,7 @@ def run(config: ExampleConfig) -> None:
             )
 
             if status.ksef_number:
-                downloaded_invoice = auth.invoices.download_invoice(
+                downloaded_invoice = auth.invoices.wait_for_invoice_download(
                     ksef_number=status.ksef_number
                 )
                 print(f"Downloaded invoice of size {len(downloaded_invoice)} bytes")

@@ -183,6 +183,21 @@ class KSeFInvoiceQueryTimeoutError(KSeFException):
         )
 
 
+class KSeFInvoiceDownloadTimeoutError(KSeFException):
+    """Raised when polling for an invoice download exceeds the timeout."""
+
+    code: str = "INVOICE_DOWNLOAD_TIMEOUT"
+
+    def __init__(self, ksef_number: str, timeout: float) -> None:
+        self.ksef_number = ksef_number
+        self.timeout = timeout
+        super().__init__(
+            f"Invoice {ksef_number} not available for download after {timeout}s",
+            ksef_number=ksef_number,
+            timeout=timeout,
+        )
+
+
 class KSeFInvoiceProcessingTimeoutError(KSeFException):
     """Raised when polling for a session invoice to finish processing exceeds the timeout."""
 
