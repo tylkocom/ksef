@@ -1,3 +1,14 @@
+## v0.16.0 (2026-05-21)
+
+### Feat
+
+- **api**: support OpenAPI 2.6 compression options
+
+### Fix
+
+- tolerate unknown auth method codes
+- make pdf rendering dependencies optional
+
 ## v0.15.0 (2026-05-15)
 
 ### Feat
