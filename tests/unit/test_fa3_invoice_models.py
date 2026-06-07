@@ -246,6 +246,32 @@ def test_invoice_line_computes_amounts_from_gross_unit_price() -> None:
     assert line.vat_amount == Decimal("46.00")
 
 
+def test_invoice_line_special_xii_requires_vat_rate_xii() -> None:
+    with pytest.raises(
+        ValidationError, match="special_xii tax_regime requires vat_rate_xii"
+    ):
+        InvoiceRow(
+            name="Title XII service",
+            quantity=Decimal("2"),
+            unit_price_net=Decimal("100.00"),
+            tax_regime=TaxRegime.SPECIAL_XII,
+        )
+
+
+def test_invoice_line_special_xii_computes_amounts_with_decimal_percent() -> None:
+    line = InvoiceRow(
+        name="Title XII service",
+        quantity=Decimal("2"),
+        unit_price_net=Decimal("100.00"),
+        tax_regime=TaxRegime.SPECIAL_XII,
+        vat_rate_xii=Decimal("8.5"),
+    )
+
+    assert line.net_amount == Decimal("200.00")
+    assert line.vat_amount == Decimal("17.00")
+    assert line.gross_amount == Decimal("217.00")
+
+
 def test_invoice_line_derives_legacy_fields_from_structured_vat_classification() -> (
     None
 ):
