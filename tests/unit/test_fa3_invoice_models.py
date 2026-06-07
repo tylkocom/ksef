@@ -290,7 +290,12 @@ def test_invoice_line_requires_vat_classification_for_business_bearing_fields(
     field_value: Decimal,
 ) -> None:
     with pytest.raises(ValidationError, match="vat classification is required"):
-        InvoiceRow(name="Consulting service", **{field_name: field_value})
+        InvoiceRow.model_validate(
+            {
+                "name": "Consulting service",
+                field_name: field_value,
+            }
+        )
 
 
 def test_invoice_line_accepts_descriptive_only_without_tax_or_financial_fields() -> (
@@ -399,8 +404,9 @@ def test_invoice_margin_line_rejects_each_vat_field_independently(
     line = InvoiceRow.model_construct(
         name="Margin sale",
         tax_regime=TaxRegime.MARGIN,
-        **forbidden_field,
     )
+    for field_name, field_value in forbidden_field.items():
+        setattr(line, field_name, field_value)
 
     with pytest.raises(
         ValueError,
