@@ -1,6 +1,7 @@
 from functools import cached_property
 from typing import final
 
+from ksef2.clients._async_session import _AwaitableSession
 from ksef2.clients.async_batch import AsyncBatchSessionClient
 from ksef2.clients.async_certificates import AsyncCertificatesClient
 from ksef2.clients.async_encryption import AsyncEncryptionClient
@@ -90,7 +91,14 @@ class AsyncAuthenticatedClient:
         ) = await self._get_encryption_material()
         return aes_key, iv, encrypted_key
 
-    async def online_session(
+    def online_session(
+        self,
+        *,
+        form_code: FormSchema,
+    ) -> _AwaitableSession[AsyncOnlineSessionClient]:
+        return _AwaitableSession(self._open_online_session(form_code=form_code))
+
+    async def _open_online_session(
         self,
         *,
         form_code: FormSchema,
@@ -128,7 +136,24 @@ class AsyncAuthenticatedClient:
     ) -> AsyncOnlineSessionClient:
         return AsyncOnlineSessionClient(transport=self._authed_transport, state=state)
 
-    async def batch_session(
+    def batch_session(
+        self,
+        *,
+        prepared_batch: PreparedBatch | None = None,
+        batch_file: BatchFileInfo | None = None,
+        form_code: FormSchema = FormSchema.FA3,
+        offline_mode: bool = False,
+    ) -> _AwaitableSession[AsyncBatchSessionClient]:
+        return _AwaitableSession(
+            self._open_batch_session_from_input(
+                prepared_batch=prepared_batch,
+                batch_file=batch_file,
+                form_code=form_code,
+                offline_mode=offline_mode,
+            )
+        )
+
+    async def _open_batch_session_from_input(
         self,
         *,
         prepared_batch: PreparedBatch | None = None,
@@ -143,7 +168,7 @@ class AsyncAuthenticatedClient:
 
         if prepared_batch is not None:
             encryption = prepared_batch.encryption
-            return await self.open_batch_session(
+            return await self._open_batch_session(
                 batch_file=prepared_batch.batch_file,
                 aes_key=encryption.get_aes_key_bytes(),
                 iv=encryption.get_iv_bytes(),
@@ -165,7 +190,7 @@ class AsyncAuthenticatedClient:
             encrypted_key,
             public_key_id,
         ) = await self._get_encryption_material()
-        return await self.open_batch_session(
+        return await self._open_batch_session(
             batch_file=batch_file,
             aes_key=aes_key,
             iv=iv,
@@ -175,7 +200,32 @@ class AsyncAuthenticatedClient:
             offline_mode=offline_mode,
         )
 
-    async def open_batch_session(
+    def open_batch_session(
+        self,
+        *,
+        batch_file: BatchFileInfo,
+        aes_key: bytes,
+        iv: bytes,
+        encrypted_key: bytes,
+        public_key_id: str | None = None,
+        form_code: FormSchema = FormSchema.FA3,
+        offline_mode: bool = False,
+        prepared_batch: PreparedBatch | None = None,
+    ) -> _AwaitableSession[AsyncBatchSessionClient]:
+        return _AwaitableSession(
+            self._open_batch_session(
+                batch_file=batch_file,
+                aes_key=aes_key,
+                iv=iv,
+                encrypted_key=encrypted_key,
+                public_key_id=public_key_id,
+                form_code=form_code,
+                offline_mode=offline_mode,
+                prepared_batch=prepared_batch,
+            )
+        )
+
+    async def _open_batch_session(
         self,
         *,
         batch_file: BatchFileInfo,
