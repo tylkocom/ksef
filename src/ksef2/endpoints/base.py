@@ -8,9 +8,11 @@ import httpx
 from pydantic import BaseModel
 
 from ksef2.core.protocols import Middleware
+from ksef2.domain.types import (
+    OffsetPaginationQueryParams as OffsetPaginationQueryParams,
+)
 from ksef2.endpoints.shared import (
     DEFAULT_PARAMS_ADAPTER,
-    OffsetPaginationQueryParams as OffsetPaginationQueryParams,
     QueryParamsAdapter,
     build_params as build_query_params,
     parse_response,

@@ -1,8 +1,9 @@
-from typing import NotRequired, TypedDict, Unpack, final
+from typing import TypedDict, Unpack, final
 
 from pydantic import TypeAdapter
 
 from ksef2.core import routes
+from ksef2.domain.types import InvoiceMetadataQueryParams
 from ksef2.endpoints.base import BaseEndpoints
 from ksef2.infra.schema.api import spec
 from ksef2.infra.schema.api.supp.invoices import (
@@ -10,14 +11,6 @@ from ksef2.infra.schema.api.supp.invoices import (
     SendInvoiceRequest,
 )
 
-InvoiceMetadataQueryParams = TypedDict(
-    "InvoiceMetadataQueryParams",
-    {
-        "sortOrder": NotRequired[str | None],
-        "pageOffset": NotRequired[int | None],
-        "pageSize": NotRequired[int | None],
-    },
-)
 SessionInvoiceListQueryParams = TypedDict(
     "SessionInvoiceListQueryParams",
     {

@@ -1,19 +1,12 @@
 from collections.abc import Mapping
-from typing import NotRequired, Protocol, TypedDict, cast
+from typing import Protocol, cast
 from urllib.parse import urlencode
 
 import httpx
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from ksef2.core import codecs, exceptions
-
-OffsetPaginationQueryParams = TypedDict(
-    "OffsetPaginationQueryParams",
-    {
-        "pageOffset": NotRequired[int | None],
-        "pageSize": NotRequired[int | None],
-    },
-)
+from ksef2.domain.types import OffsetPaginationQueryParams
 
 
 class QueryParamsAdapter(Protocol):

@@ -18,10 +18,12 @@ from ksef2.domain.models.session import (
     session_type_to_spec,
 )
 from ksef2.domain.models.tokens import TokenAuthorIdentifierType, TokenStatus
-from ksef2.endpoints.base import OffsetPaginationQueryParams
-from ksef2.endpoints.invoices import InvoiceMetadataQueryParams
-from ksef2.endpoints.session import ListSessionsQueryParams
-from ksef2.endpoints.tokens import ListTokensQueryParams
+from ksef2.domain.types import (
+    InvoiceMetadataQueryParams,
+    ListSessionsQueryParams,
+    ListTokensQueryParams,
+    OffsetPaginationQueryParams,
+)
 
 
 class PageSizeMixin(BaseModel):
@@ -111,21 +113,6 @@ class SessionFiltersMixin(BaseModel):
         return [session_status_to_spec(status) for status in value]
 
 
-class SessionListParams(SessionFiltersMixin, TokenPaginationParams):
-    """GET /sessions"""
-
-    page_size: int = Field(default=10, ge=10, le=1000)
-    session_type: SessionType
-    reference_number: str | None = None
-    date_created_from: datetime | None = None
-    date_created_to: datetime | None = None
-    date_closed_from: datetime | None = None
-    date_closed_to: datetime | None = None
-    date_modified_from: datetime | None = None
-    date_modified_to: datetime | None = None
-    statuses: list[SessionStatus] | None = None
-
-
 class SessionInvoiceListParams(TokenPaginationParams):
     page_size: int = Field(default=10, ge=10, le=1000)
 
@@ -135,9 +122,6 @@ class TokenListParams(KSeFBaseParams[ListTokensQueryParams], PageSizeMixin):
     description: str | None = None
     author_identifier: str | None = None
     author_identifier_type: TokenAuthorIdentifierType | None = None
-
-
-class AuthSessionListParams(TokenPaginationParams): ...
 
 
 class ListSessionsQuery(

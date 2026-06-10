@@ -1,4 +1,50 @@
-from typing import Literal
+from typing import Literal, NotRequired, TypedDict
+
+OffsetPaginationQueryParams = TypedDict(
+    "OffsetPaginationQueryParams",
+    {
+        "pageOffset": NotRequired[int | None],
+        "pageSize": NotRequired[int | None],
+    },
+)
+
+InvoiceMetadataQueryParams = TypedDict(
+    "InvoiceMetadataQueryParams",
+    {
+        "sortOrder": NotRequired[str | None],
+        "pageOffset": NotRequired[int | None],
+        "pageSize": NotRequired[int | None],
+    },
+)
+
+ListSessionsQueryParams = TypedDict(
+    "ListSessionsQueryParams",
+    {
+        "pageSize": NotRequired[int | None],
+        "sessionType": Literal["Online", "Batch"],
+        "referenceNumber": NotRequired[str | None],
+        "dateCreatedFrom": NotRequired[str | None],
+        "dateCreatedTo": NotRequired[str | None],
+        "dateClosedFrom": NotRequired[str | None],
+        "dateClosedTo": NotRequired[str | None],
+        "dateModifiedFrom": NotRequired[str | None],
+        "dateModifiedTo": NotRequired[str | None],
+        "statuses": NotRequired[
+            list[Literal["InProgress", "Succeeded", "Failed", "Cancelled"]] | None
+        ],
+    },
+)
+
+ListTokensQueryParams = TypedDict(
+    "ListTokensQueryParams",
+    {
+        "status": NotRequired[list[str] | None],
+        "description": NotRequired[str | None],
+        "authorIdentifier": NotRequired[str | None],
+        "authorIdentifierType": NotRequired[str | None],
+        "pageSize": NotRequired[int | None],
+    },
+)
 
 type CurrencyCodes = Literal[
     "AED",
