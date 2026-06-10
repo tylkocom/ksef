@@ -19,6 +19,7 @@ beartype_this_package(
 from ksef2.clients.async_base import AsyncClient
 from ksef2.clients.base import Client
 from ksef2.domain.models import FormSchema
+from ksef2.__version__ import version as __version__
 from ksef2.config import (
     ConnectionPoolConfig,
     Environment,
@@ -27,15 +28,58 @@ from ksef2.config import (
     TlsConfig,
     TransportConfig,
 )
+from ksef2.core.exceptions import (
+    ExceptionCode,
+    KSeFApiError,
+    KSeFAuthError,
+    KSeFAuthPollingTimeoutError,
+    KSeFBatchSessionTimeoutError,
+    KSeFClientClosedError,
+    KSeFEncryptionError,
+    KSeFException,
+    KSeFExportTimeoutError,
+    KSeFInvoiceDownloadTimeoutError,
+    KSeFInvoiceProcessingTimeoutError,
+    KSeFInvoiceQueryTimeoutError,
+    KSeFInvoiceRenderingError,
+    KSeFMetadataPaginationError,
+    KSeFRateLimitError,
+    KSeFSessionError,
+    KSeFTokenStatusTimeoutError,
+    KSeFUnsupportedEnvironmentError,
+    KSeFValidationError,
+    NoCertificateAvailableError,
+)
 
 __all__ = [
     "AsyncClient",
     "Client",
     "ConnectionPoolConfig",
     "Environment",
+    "ExceptionCode",
     "FormSchema",
+    "KSeFApiError",
+    "KSeFAuthError",
+    "KSeFAuthPollingTimeoutError",
+    "KSeFBatchSessionTimeoutError",
+    "KSeFClientClosedError",
+    "KSeFEncryptionError",
+    "KSeFException",
+    "KSeFExportTimeoutError",
+    "KSeFInvoiceDownloadTimeoutError",
+    "KSeFInvoiceProcessingTimeoutError",
+    "KSeFInvoiceQueryTimeoutError",
+    "KSeFInvoiceRenderingError",
+    "KSeFMetadataPaginationError",
+    "KSeFRateLimitError",
+    "KSeFSessionError",
+    "KSeFTokenStatusTimeoutError",
+    "KSeFUnsupportedEnvironmentError",
+    "KSeFValidationError",
+    "NoCertificateAvailableError",
     "RetryConfig",
     "TimeoutConfig",
     "TlsConfig",
     "TransportConfig",
+    "__version__",
 ]

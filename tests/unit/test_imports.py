@@ -15,6 +15,22 @@ def test_public_clients_import() -> None:
     assert AsyncClient.__name__ == "AsyncClient"
 
 
+def test_root_error_surface_import() -> None:
+    import ksef2
+
+    assert ksef2.__version__
+    assert ksef2.KSeFException.__name__ == "KSeFException"
+    assert ksef2.KSeFApiError.__name__ == "KSeFApiError"
+    assert ksef2.KSeFAuthError.__name__ == "KSeFAuthError"
+    assert ksef2.KSeFValidationError.__name__ == "KSeFValidationError"
+    assert ksef2.KSeFRateLimitError.__name__ == "KSeFRateLimitError"
+    assert ksef2.KSeFAuthPollingTimeoutError.__name__ == "KSeFAuthPollingTimeoutError"
+    assert ksef2.KSeFTokenStatusTimeoutError.__name__ == "KSeFTokenStatusTimeoutError"
+    assert ksef2.ExceptionCode.UNKNOWN_ERROR == 10000
+    assert "KSeFApiError" in ksef2.__all__
+    assert "__version__" in ksef2.__all__
+
+
 def test_common_domain_models_import() -> None:
     from ksef2.domain.models import InvoiceMetadataParams, InvoicesFilter
 
