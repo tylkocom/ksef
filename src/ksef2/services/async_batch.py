@@ -3,6 +3,7 @@ from collections.abc import Awaitable, Callable, Iterable
 from pathlib import Path
 from typing import final
 
+from ksef2.clients._async_session import _AwaitableSession
 from ksef2.clients.async_batch import AsyncBatchSessionClient
 from ksef2.core import exceptions
 from ksef2.core.async_protocols import AsyncMiddleware
@@ -80,7 +81,14 @@ class AsyncBatchService:
             max_part_size=max_part_size,
         )
 
-    async def open_session(
+    def open_session(
+        self,
+        *,
+        prepared_batch: PreparedBatch,
+    ) -> _AwaitableSession[AsyncBatchSessionClient]:
+        return _AwaitableSession(self._open_session(prepared_batch=prepared_batch))
+
+    async def _open_session(
         self,
         *,
         prepared_batch: PreparedBatch,
@@ -137,7 +145,7 @@ class AsyncBatchService:
         *,
         prepared_batch: PreparedBatch,
     ) -> BatchSessionState:
-        async with await self.open_session(prepared_batch=prepared_batch) as session:
+        async with self.open_session(prepared_batch=prepared_batch) as session:
             state = session.get_state()
             await session.upload_parts()
         return state

@@ -114,7 +114,7 @@ async def main() -> None:
     async with AsyncClient(Environment.TEST) as client:
         auth = await client.authentication.with_test_certificate(nip=NIP)
 
-        async with await auth.online_session(form_code=FormSchema.FA3) as session:
+        async with auth.online_session(form_code=FormSchema.FA3) as session:
             result = await session.send_invoice(
                 invoice_xml=Path("invoice.xml").read_bytes()
             )
@@ -177,7 +177,7 @@ KSeF `ExceptionCode` handling, retry patterns, and timeout semantics.
 Async methods are awaited, and async session/testdata helpers are used with
 `async with`. For example, `client.authentication.with_token(...)` becomes
 `await client.authentication.with_token(...)`, and
-`auth.online_session(...)` becomes `async with await auth.online_session(...)`.
+`auth.online_session(...)` becomes `async with auth.online_session(...)`.
 
 ## Logging
 

@@ -257,7 +257,10 @@ class TestAsyncAuthenticatedOnlineSession:
             certificate_store=store,
         )
 
-        session_client = asyncio.run(client.online_session(form_code=FormSchema.FA3))
+        async def _run() -> AsyncOnlineSessionClient:
+            return await client.online_session(form_code=FormSchema.FA3)
+
+        session_client = asyncio.run(_run())
 
         assert isinstance(session_client, AsyncOnlineSessionClient)
         call = async_fake_transport.calls[0]
@@ -267,3 +270,99 @@ class TestAsyncAuthenticatedOnlineSession:
         assert call.json is not None
         assert call.json["encryption"]["publicKeyId"] == store.all()[0].public_key_id
         assert session_client.get_state().access_token == "fake-access-token"
+
+    @patch(
+        "ksef2.clients.async_authenticated.encrypt_symmetric_key",
+        return_value=b"enc-key",
+    )
+    @patch(
+        "ksef2.clients.async_authenticated.generate_session_key",
+        return_value=(b"k" * 32, b"v" * 16),
+    )
+    def test_online_session_context_manager_opens_and_closes_session(
+        self,
+        _mock_generate_session_key,
+        _mock_encrypt_symmetric_key,
+        async_fake_transport: AsyncFakeTransport,
+        domain_auth_tokens: BaseFactory[AuthTokens],
+        domain_public_key_cert: BaseFactory[PublicKeyCertificate],
+        session_open_online_resp: BaseFactory[spec.OpenOnlineSessionResponse],
+    ) -> None:
+        reference_number = "20250625-EE-319D7EE000-B67F415CDC-2C"
+        open_response = session_open_online_resp.build(referenceNumber=reference_number)
+        async_fake_transport.enqueue(open_response.model_dump(mode="json"))
+        async_fake_transport.enqueue({})
+        store = CertificateStore()
+        store.load(
+            [
+                domain_public_key_cert.build(
+                    usage=["symmetric_key_encryption"],
+                )
+            ]
+        )
+        client = _build_authenticated_client(
+            async_fake_transport,
+            domain_auth_tokens.build(),
+            certificate_store=store,
+        )
+
+        async def _run() -> None:
+            async with client.online_session(form_code=FormSchema.FA3) as session:
+                assert session.get_state().reference_number == reference_number
+
+        asyncio.run(_run())
+
+        assert [call.method for call in async_fake_transport.calls] == ["POST", "POST"]
+        assert async_fake_transport.calls[0].path == SessionRoutes.OPEN_ONLINE
+        assert async_fake_transport.calls[1].path == (
+            SessionRoutes.TERMINATE_ONLINE.format(referenceNumber=reference_number)
+        )
+
+    @patch(
+        "ksef2.clients.async_authenticated.encrypt_symmetric_key",
+        return_value=b"enc-key",
+    )
+    @patch(
+        "ksef2.clients.async_authenticated.generate_session_key",
+        return_value=(b"k" * 32, b"v" * 16),
+    )
+    def test_online_session_context_manager_closes_after_exception(
+        self,
+        _mock_generate_session_key,
+        _mock_encrypt_symmetric_key,
+        async_fake_transport: AsyncFakeTransport,
+        domain_auth_tokens: BaseFactory[AuthTokens],
+        domain_public_key_cert: BaseFactory[PublicKeyCertificate],
+        session_open_online_resp: BaseFactory[spec.OpenOnlineSessionResponse],
+    ) -> None:
+        reference_number = "20250625-EE-319D7EE000-B67F415CDC-2C"
+        async_fake_transport.enqueue(
+            session_open_online_resp.build(referenceNumber=reference_number).model_dump(
+                mode="json"
+            )
+        )
+        async_fake_transport.enqueue({})
+        store = CertificateStore()
+        store.load(
+            [
+                domain_public_key_cert.build(
+                    usage=["symmetric_key_encryption"],
+                )
+            ]
+        )
+        client = _build_authenticated_client(
+            async_fake_transport,
+            domain_auth_tokens.build(),
+            certificate_store=store,
+        )
+
+        async def _run() -> None:
+            async with client.online_session(form_code=FormSchema.FA3):
+                raise ValueError("block failed")
+
+        with pytest.raises(ValueError, match="block failed"):
+            asyncio.run(_run())
+
+        assert async_fake_transport.calls[1].path == (
+            SessionRoutes.TERMINATE_ONLINE.format(referenceNumber=reference_number)
+        )

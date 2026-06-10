@@ -235,6 +235,61 @@ class TestAsyncBatchService:
         assert async_fake_transport.calls[0].method == "PUT"
         assert async_fake_transport.calls[1].method == "POST"
 
+    def test_open_session_context_manager_opens_and_closes_session(
+        self,
+        async_fake_transport: AsyncFakeTransport,
+        domain_batch_session_state: BaseFactory[BatchSessionState],
+    ) -> None:
+        state = domain_batch_session_state.build(reference_number="batch-ref")
+
+        async def _open_batch_session(**kwargs):
+            return AsyncBatchSessionClient(
+                async_fake_transport,
+                state,
+                prepared_batch=kwargs.get("prepared_batch"),
+            )
+
+        service = _build_service(
+            async_fake_transport,
+            open_batch_session=_open_batch_session,
+        )
+        prepared_batch = PreparedBatch(
+            batch_file=BatchFileInfo(
+                file_size=10,
+                file_hash=sha256_b64(b"plaintext"),
+                parts=[
+                    BatchFilePart(
+                        ordinal_number=1,
+                        file_size=12,
+                        file_hash=sha256_b64(b"encrypted"),
+                    )
+                ],
+            ),
+            parts=[
+                BatchPreparedPart(
+                    ordinal_number=1,
+                    content=b"encrypted",
+                    file_size=len(b"encrypted"),
+                    file_hash=sha256_b64(b"encrypted"),
+                )
+            ],
+            encryption=BatchEncryptionData.from_bytes(
+                aes_key=b"k" * 32,
+                iv=b"v" * 16,
+                encrypted_key=b"enc-key",
+            ),
+            invoices=[],
+        )
+        async_fake_transport.enqueue(json_body={})
+
+        async def _run() -> None:
+            async with service.open_session(prepared_batch=prepared_batch) as session:
+                assert session.reference_number == "batch-ref"
+
+        asyncio.run(_run())
+
+        assert async_fake_transport.calls[0].method == "POST"
+
     def test_wait_for_completion_returns_terminal_success(
         self,
         async_fake_transport: AsyncFakeTransport,
