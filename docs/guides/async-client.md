@@ -88,7 +88,7 @@ from pathlib import Path
 from ksef2 import FormSchema
 
 
-async with await auth.online_session(form_code=FormSchema.FA3) as session:
+async with auth.online_session(form_code=FormSchema.FA3) as session:
     result = await session.send_invoice(invoice_xml=Path("invoice.xml").read_bytes())
     status = await session.wait_for_invoice_ready(
         invoice_reference_number=result.reference_number,
@@ -180,7 +180,7 @@ print(state.reference_number)
 For explicit upload control:
 
 ```python
-async with await auth.batch.open_session(prepared_batch=prepared) as session:
+async with auth.batch.open_session(prepared_batch=prepared) as session:
     await session.upload_parts()
     status = await session.get_status()
     print(status.status.description)

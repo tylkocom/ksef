@@ -3,7 +3,7 @@
 Use online sessions to send invoices and `auth.invoices` for metadata queries, exports, and downloads.
 
 Async applications use the same entry points on `AsyncClient`; await network
-operations and use `async with await auth.online_session(...)` for session
+operations and use `async with auth.online_session(...)` for session
 lifecycle management.
 
 ## Send an Invoice
@@ -45,7 +45,7 @@ from pathlib import Path
 from ksef2 import FormSchema
 
 
-async with await auth.online_session(form_code=FormSchema.FA3) as session:
+async with auth.online_session(form_code=FormSchema.FA3) as session:
     result = await session.send_invoice(invoice_xml=Path("invoice.xml").read_bytes())
     status = await session.wait_for_invoice_ready(
         invoice_reference_number=result.reference_number,
