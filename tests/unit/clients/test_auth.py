@@ -15,6 +15,7 @@ from ksef2.config import Environment
 from ksef2.core.xades import generate_test_certificate
 from ksef2.core.exceptions import (
     KSeFAuthError,
+    KSeFAuthPollingTimeoutError,
     KSeFUnsupportedEnvironmentError,
     NoCertificateAvailableError,
 )
@@ -191,13 +192,17 @@ class TestAuthClient:
         fake_transport.enqueue(pending_status.model_dump(mode="json"))
         fake_transport.enqueue(pending_status.model_dump(mode="json"))
 
-        with pytest.raises(KSeFAuthError, match="timed out"):
+        with pytest.raises(KSeFAuthPollingTimeoutError, match="not ready") as exc_info:
             _ = client.with_token(
                 ksef_token="ksef-token",
                 nip="1234567890",
                 poll_interval=0.0,
                 max_poll_attempts=2,
             )
+
+        assert exc_info.value.reference_number == init_response.referenceNumber
+        assert exc_info.value.attempts == 2
+        assert not hasattr(exc_info.value, "status_code")
 
     @patch(
         "ksef2.core.xades.sign_xades",

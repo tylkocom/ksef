@@ -170,6 +170,56 @@ class KSeFExportTimeoutError(KSeFException):
         )
 
 
+class KSeFAuthPollingTimeoutError(KSeFException):
+    """Raised when polling for authentication completion exceeds the limit."""
+
+    code: str = "AUTH_POLLING_TIMEOUT"
+
+    def __init__(
+        self,
+        reference_number: str,
+        attempts: int,
+        poll_interval: float,
+    ) -> None:
+        elapsed = attempts * poll_interval
+        self.reference_number = reference_number
+        self.attempts = attempts
+        self.poll_interval = poll_interval
+        self.elapsed = elapsed
+        super().__init__(
+            f"Authentication {reference_number} not ready after {attempts} attempts",
+            reference_number=reference_number,
+            attempts=attempts,
+            poll_interval=poll_interval,
+            elapsed=elapsed,
+        )
+
+
+class KSeFTokenStatusTimeoutError(KSeFException):
+    """Raised when polling for a token status change exceeds the limit."""
+
+    code: str = "TOKEN_STATUS_TIMEOUT"
+
+    def __init__(
+        self,
+        reference_number: str,
+        attempts: int,
+        poll_interval: float,
+    ) -> None:
+        elapsed = attempts * poll_interval
+        self.reference_number = reference_number
+        self.attempts = attempts
+        self.poll_interval = poll_interval
+        self.elapsed = elapsed
+        super().__init__(
+            f"Token {reference_number} not active after {attempts} attempts",
+            reference_number=reference_number,
+            attempts=attempts,
+            poll_interval=poll_interval,
+            elapsed=elapsed,
+        )
+
+
 class KSeFInvoiceQueryTimeoutError(KSeFException):
     """Raised when polling for invoices to appear exceeds the timeout."""
 

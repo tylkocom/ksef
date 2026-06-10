@@ -10,6 +10,7 @@ from ksef2.clients.async_authenticated import AsyncAuthenticatedClient
 from ksef2.config import Environment
 from ksef2.core.exceptions import (
     KSeFAuthError,
+    KSeFAuthPollingTimeoutError,
     KSeFUnsupportedEnvironmentError,
     NoCertificateAvailableError,
 )
@@ -171,7 +172,7 @@ class TestAsyncAuthClient:
         async_fake_transport.enqueue(pending_status.model_dump(mode="json"))
         async_fake_transport.enqueue(pending_status.model_dump(mode="json"))
 
-        with pytest.raises(KSeFAuthError, match="timed out"):
+        with pytest.raises(KSeFAuthPollingTimeoutError, match="not ready") as exc_info:
             asyncio.run(
                 client.with_token(
                     ksef_token="ksef-token",
@@ -180,6 +181,10 @@ class TestAsyncAuthClient:
                     max_poll_attempts=2,
                 )
             )
+
+        assert exc_info.value.reference_number == init_response.referenceNumber
+        assert exc_info.value.attempts == 2
+        assert not hasattr(exc_info.value, "status_code")
 
     @patch(
         "ksef2.core.xades.sign_xades",
