@@ -36,12 +36,7 @@ SKIPPED_CLASSES = {
     "ksef2.endpoints.async_tokens.ListTokensQueryParams": "shared request parameter model",
 }
 
-KNOWN_DIVERGENCES = {
-    "BaseEndpoints.build_params": (
-        "TODO: sync still accepts a generic TypeAdapter while async already accepts "
-        "the shared QueryParamsAdapter protocol."
-    ),
-}
+KNOWN_DIVERGENCES: dict[str, str] = {}
 
 ASYNC_METHOD_ALIASES = {
     "aclose": "close",
