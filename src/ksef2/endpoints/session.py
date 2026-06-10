@@ -1,32 +1,16 @@
 """Session management endpoints."""
 
-from typing import Literal, NotRequired, TypedDict, Unpack, final
+from typing import Unpack, final
 
 from pydantic import TypeAdapter
 
 from ksef2.core import routes
+from ksef2.domain.types import ListSessionsQueryParams
 from ksef2.endpoints.base import BaseEndpoints
 from ksef2.infra.schema.api import spec
 from ksef2.infra.schema.api.supp.batch import OpenBatchSessionRequest
 from ksef2.infra.schema.api.supp.session import OpenOnlineSessionRequest
 
-ListSessionsQueryParams = TypedDict(
-    "ListSessionsQueryParams",
-    {
-        "pageSize": NotRequired[int | None],
-        "sessionType": Literal["Online", "Batch"],
-        "referenceNumber": NotRequired[str | None],
-        "dateCreatedFrom": NotRequired[str | None],
-        "dateCreatedTo": NotRequired[str | None],
-        "dateClosedFrom": NotRequired[str | None],
-        "dateClosedTo": NotRequired[str | None],
-        "dateModifiedFrom": NotRequired[str | None],
-        "dateModifiedTo": NotRequired[str | None],
-        "statuses": NotRequired[
-            list[Literal["InProgress", "Succeeded", "Failed", "Cancelled"]] | None
-        ],
-    },
-)
 _LIST_SESSIONS_PARAMS = TypeAdapter(ListSessionsQueryParams)
 
 

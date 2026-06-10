@@ -18,10 +18,12 @@ from ksef2.domain.models.session import (
     session_type_to_spec,
 )
 from ksef2.domain.models.tokens import TokenAuthorIdentifierType, TokenStatus
-from ksef2.endpoints.base import OffsetPaginationQueryParams
-from ksef2.endpoints.invoices import InvoiceMetadataQueryParams
-from ksef2.endpoints.session import ListSessionsQueryParams
-from ksef2.endpoints.tokens import ListTokensQueryParams
+from ksef2.domain.types import (
+    InvoiceMetadataQueryParams,
+    ListSessionsQueryParams,
+    ListTokensQueryParams,
+    OffsetPaginationQueryParams,
+)
 
 
 class PageSizeMixin(BaseModel):

@@ -2,21 +2,14 @@
 
 import abc
 from collections.abc import Mapping
-from typing import ClassVar, NotRequired, TypedDict
+from typing import ClassVar
 from urllib.parse import urlencode
 
 import httpx
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from ksef2.core import codecs, exceptions
 from ksef2.core.protocols import Middleware
-
-OffsetPaginationQueryParams = TypedDict(
-    "OffsetPaginationQueryParams",
-    {
-        "pageOffset": NotRequired[int | None],
-        "pageSize": NotRequired[int | None],
-    },
-)
+from ksef2.domain.types import OffsetPaginationQueryParams
 
 
 class BaseEndpoints(abc.ABC):

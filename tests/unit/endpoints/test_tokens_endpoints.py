@@ -7,7 +7,8 @@ from pydantic import BaseModel
 
 from ksef2.core import exceptions
 from ksef2.core.routes import TokenRoutes
-from ksef2.endpoints.tokens import TokenEndpoints, ListTokensQueryParams
+from ksef2.domain.types import ListTokensQueryParams
+from ksef2.endpoints.tokens import TokenEndpoints
 from tests.unit.fakes import transport
 from tests.unit.factories.tokens import (
     GenerateTokenRequestFactory,

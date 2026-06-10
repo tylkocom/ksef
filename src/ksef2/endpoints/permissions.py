@@ -1,7 +1,7 @@
 from typing import final, Unpack
 
 from ksef2.core import routes
-from ksef2.endpoints.base import OffsetPaginationQueryParams
+from ksef2.domain.types import OffsetPaginationQueryParams
 from ksef2.endpoints.base import BaseEndpoints
 from ksef2.infra.schema.api import spec
 
