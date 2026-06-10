@@ -47,10 +47,10 @@ class AsyncTokensClient:
             retry_predicate=lambda result: result.status != "active",
             poll_interval=poll_interval,
             max_attempts=max_attempts,
-            timeout_error_factory=lambda: exceptions.KSeFApiError(
-                0,
-                exceptions.ExceptionCode.UNKNOWN_ERROR,
-                f"Token activation polling timed out after {max_attempts} attempts",
+            timeout_error_factory=lambda: exceptions.KSeFTokenStatusTimeoutError(
+                reference_number=reference_number_local,
+                attempts=max_attempts,
+                poll_interval=poll_interval,
             ),
         )
 

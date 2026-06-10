@@ -9,7 +9,6 @@ from ksef2.config import Environment
 from ksef2.core import exceptions
 from ksef2.core.async_protocols import AsyncMiddleware
 from ksef2.core.crypto import encrypt_token
-from ksef2.core.exceptions import KSeFAuthError
 from ksef2.core.polling import async_poll_until
 from ksef2.core.stores import CertificateStore
 from ksef2.core.xades import XAdESPrivateKey, generate_test_certificate
@@ -192,7 +191,7 @@ class AsyncAuthClient:
                 )
             )
             if status.status_code >= 400:
-                raise KSeFAuthError(
+                raise exceptions.KSeFAuthError(
                     status_code=status.status_code,
                     message=f"Authentication failed: {status.status_description}",
                 )
@@ -203,8 +202,9 @@ class AsyncAuthClient:
             retry_predicate=lambda status: status.status_code < 200,
             poll_interval=poll_interval,
             max_attempts=max_attempts,
-            timeout_error_factory=lambda: KSeFAuthError(
-                status_code=408,
-                message="Authentication polling timed out.",
+            timeout_error_factory=lambda: exceptions.KSeFAuthPollingTimeoutError(
+                reference_number=reference_number_local,
+                attempts=max_attempts,
+                poll_interval=poll_interval,
             ),
         )

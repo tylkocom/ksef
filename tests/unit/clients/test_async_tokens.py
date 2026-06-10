@@ -119,7 +119,10 @@ class TestAsyncTokensClient:
         for _ in range(3):
             async_fake_transport.enqueue(pending_resp.model_dump(mode="json"))
 
-        with pytest.raises(exceptions.KSeFApiError, match="polling timed out"):
+        with pytest.raises(
+            exceptions.KSeFTokenStatusTimeoutError,
+            match="not active",
+        ) as exc_info:
             _ = asyncio.run(
                 tokens_client.generate(
                     permissions=["invoice_read"],
@@ -128,6 +131,10 @@ class TestAsyncTokensClient:
                     max_poll_attempts=3,
                 )
             )
+
+        assert exc_info.value.reference_number == gen_resp.referenceNumber
+        assert exc_info.value.attempts == 3
+        assert not hasattr(exc_info.value, "status_code")
 
     def test_generate_zero_max_poll_attempts_does_not_poll_status(
         self,
@@ -138,7 +145,10 @@ class TestAsyncTokensClient:
         gen_resp = token_generate_resp.build()
         async_fake_transport.enqueue(gen_resp.model_dump(mode="json"))
 
-        with pytest.raises(exceptions.KSeFApiError, match="polling timed out"):
+        with pytest.raises(
+            exceptions.KSeFTokenStatusTimeoutError,
+            match="not active",
+        ) as exc_info:
             _ = asyncio.run(
                 tokens_client.generate(
                     permissions=["invoice_read"],
@@ -147,6 +157,10 @@ class TestAsyncTokensClient:
                     max_poll_attempts=0,
                 )
             )
+
+        assert exc_info.value.reference_number == gen_resp.referenceNumber
+        assert exc_info.value.attempts == 0
+        assert not hasattr(exc_info.value, "status_code")
 
         assert len(async_fake_transport.calls) == 1
         assert async_fake_transport.calls[0].method == "POST"
