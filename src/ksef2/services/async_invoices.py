@@ -20,6 +20,7 @@ from ksef2.domain.models.invoices import (
 )
 from ksef2.domain.models.pagination import InvoiceMetadataParams
 from ksef2.logging import get_logger
+from ksef2.services.export_parts import safe_part_filename
 
 logger = get_logger(__name__)
 
@@ -164,16 +165,7 @@ class AsyncInvoicesService:
                 iv=export.iv,
             )
 
-            sanitized_part_name = Path(part.part_name.replace("\\", "/")).name
-            output_filename = sanitized_part_name.removesuffix(".aes")
-            if (
-                "\x00" in output_filename
-                or output_filename.startswith(".")
-                or output_filename in {"", ".", ".."}
-            ):
-                raise ValueError(
-                    f"Invalid export package part name: {part.part_name!r}"
-                )
+            output_filename = safe_part_filename(part.part_name)
             output_file = target_path / output_filename
             await asyncio.to_thread(output_file.write_bytes, zip_data)
 

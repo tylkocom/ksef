@@ -9,7 +9,6 @@ from ksef2.core.middlewares.auth import BearerTokenMiddleware
 from ksef2.core.polling import poll_until
 from ksef2.core.protocols import Middleware
 from ksef2.core.stores import CertificateStore
-from ksef2.logging import get_logger
 from ksef2.domain.models.compression import CompressionType
 from ksef2.domain.models.invoices import (
     ExportHandle,
@@ -20,6 +19,8 @@ from ksef2.domain.models.invoices import (
     QueryInvoicesMetadataResponse,
 )
 from ksef2.domain.models.pagination import InvoiceMetadataParams
+from ksef2.logging import get_logger
+from ksef2.services.export_parts import safe_part_filename
 
 logger = get_logger(__name__)
 
@@ -162,7 +163,7 @@ class InvoicesService:
 
             zip_data = decrypt_aes_cbc(resp.content, key=export.aes_key, iv=export.iv)
 
-            output_filename = part.part_name.replace(".aes", "")
+            output_filename = safe_part_filename(part.part_name)
             output_file = target_path / output_filename
 
             with open(output_file, "wb") as f:
