@@ -8,7 +8,6 @@ from typing import final
 from ksef2.clients.invoices import InvoicesClient
 from ksef2.core import exceptions
 from ksef2.core.crypto import decrypt_aes_cbc
-from ksef2.core.middlewares.auth import BearerTokenMiddleware
 from ksef2.core.polling import poll_until
 from ksef2.core.protocols import Middleware
 from ksef2.core.stores import CertificateStore
@@ -33,17 +32,14 @@ class InvoicesService:
     def __init__(
         self,
         transport: Middleware,
+        download_transport: Middleware,
         certificate_store: CertificateStore,
         *,
         client: InvoicesClient | None = None,
         ensure_encryption_certificates_loaded: Callable[[], None] | None = None,
     ) -> None:
         self._transport = transport
-        self._download_transport = (
-            transport._next
-            if isinstance(transport, BearerTokenMiddleware)
-            else transport
-        )
+        self._download_transport = download_transport
         self._certificate_store = certificate_store
         self._client = client or InvoicesClient(transport)
         self._ensure_encryption_certificates_loaded = (

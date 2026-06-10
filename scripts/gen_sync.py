@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import cast, override
 
 import libcst as cst
-from libcst.helpers import get_full_name_for_node, parse_template_module
+from libcst.helpers import get_full_name_for_node
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -216,10 +216,6 @@ ASYNC_CLASS_RE = re.compile(r"^Async[A-Z]\w*$")
 ASYNC_MODULE_RE = re.compile(r"(^|\.)async_")
 
 
-def generated_files() -> tuple[Path, ...]:
-    return tuple(pair.target for pair in GENERATED_PAIRS)
-
-
 def resolve_pair(only: str | None) -> list[GeneratedPair]:
     if only is None:
         return list(GENERATED_PAIRS)
@@ -359,108 +355,10 @@ def generate_source(pair: GeneratedPair, repo_root: Path = REPO_ROOT) -> str:
     source = source_path.read_text()
     module = cst.parse_module(source)
     transformed = module.visit(AsyncToSyncTransformer())
-    transformed = transformed.visit(SyncCompatibilityTransformer(pair))
+    _assert_no_asyncio_references(transformed, pair)
     body = transformed.code
     header = HEADER_TEMPLATE.format(source_path=pair.source.as_posix())
     return header + body
-
-
-class SyncCompatibilityTransformer(cst.CSTTransformer):
-    def __init__(self, pair: GeneratedPair) -> None:
-        super().__init__()
-
-        self._pair = pair
-        self._class_stack: list[str] = []
-        self._function_stack: list[str] = []
-
-    @property
-    def _generating_invoices_service(self) -> bool:
-        return self._pair.target == Path("src/ksef2/services/invoices.py")
-
-    @override
-    def visit_ClassDef(self, node: cst.ClassDef) -> bool | None:
-        self._class_stack.append(node.name.value)
-        return True
-
-    @override
-    def leave_ClassDef(
-        self, original_node: cst.ClassDef, updated_node: cst.ClassDef
-    ) -> cst.ClassDef:
-        _ = self._class_stack.pop()
-        return updated_node
-
-    @override
-    def visit_FunctionDef(self, node: cst.FunctionDef) -> bool | None:
-        self._function_stack.append(node.name.value)
-        return True
-
-    @override
-    def leave_FunctionDef(
-        self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
-    ) -> cst.FunctionDef:
-        function_name = self._function_stack.pop()
-        if (
-            self._generating_invoices_service
-            and self._class_stack == ["InvoicesService"]
-            and function_name == "__init__"
-        ):
-            return updated_node.with_changes(
-                params=_remove_param(updated_node.params, "download_transport")
-            )
-        return updated_node
-
-    @override
-    def leave_SimpleStatementLine(
-        self,
-        original_node: cst.SimpleStatementLine,
-        updated_node: cst.SimpleStatementLine,
-    ) -> cst.BaseStatement:
-        if (
-            self._generating_invoices_service
-            and self._class_stack == ["InvoicesService"]
-            and self._function_stack == ["__init__"]
-            and _is_download_transport_assignment(updated_node)
-        ):
-            return cst.parse_statement(
-                "self._download_transport = (\n"
-                "    transport._next\n"
-                "    if isinstance(transport, BearerTokenMiddleware)\n"
-                "    else transport\n"
-                ")\n"
-            )
-        return updated_node
-
-    @override
-    def leave_Call(
-        self, original_node: cst.Call, updated_node: cst.Call
-    ) -> cst.BaseExpression:
-        if _is_name(updated_node.func, "InvoicesService"):
-            positional = [
-                index
-                for index, arg in enumerate(updated_node.args)
-                if arg.keyword is None and not arg.star
-            ]
-            if len(positional) >= 3:
-                remove_index = positional[1]
-                return updated_node.with_changes(
-                    args=tuple(
-                        arg
-                        for index, arg in enumerate(updated_node.args)
-                        if index != remove_index
-                    )
-                )
-        return updated_node
-
-    @override
-    def leave_Module(
-        self, original_node: cst.Module, updated_node: cst.Module
-    ) -> cst.Module:
-        if not self._generating_invoices_service:
-            return updated_node
-        import_statement = cst.parse_statement(
-            "from ksef2.core.middlewares.auth import BearerTokenMiddleware\n"
-        )
-        return updated_node.with_changes(body=(import_statement, *updated_node.body))
 
 
 def generate_formatted_source(pair: GeneratedPair, repo_root: Path = REPO_ROOT) -> str:
@@ -485,24 +383,9 @@ def check_generated(pairs: Sequence[GeneratedPair], diff: bool) -> int:
 
 
 def write_generated(pairs: Sequence[GeneratedPair]) -> None:
-    written: list[Path] = []
     for pair in pairs:
         target_path = REPO_ROOT / pair.target
-        _ = target_path.write_text(generate_source(pair), newline="")
-        written.append(target_path)
-
-    _run_ruff_fix(written)
-
-
-def print_diffs(pairs: Sequence[GeneratedPair]) -> int:
-    status = 0
-    for pair in pairs:
-        expected = generate_formatted_source(pair)
-        actual = (REPO_ROOT / pair.target).read_text()
-        if actual != expected:
-            status = 1
-            _ = sys.stdout.writelines(_diff(actual, expected, pair.target))
-    return status
+        _ = target_path.write_text(generate_formatted_source(pair), newline="")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -536,7 +419,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return check_generated(pairs, diff=diff)
 
     if diff:
-        return print_diffs(pairs)
+        return check_generated(pairs, diff=True)
 
     write_generated(pairs)
     return 0
@@ -577,14 +460,7 @@ def _sync_module_name(module_name: str) -> str:
 
 
 def _module_expr(module_name: str) -> cst.BaseExpression:
-    parsed = parse_template_module(f"from {module_name} import x\n")
-    stmt = parsed.body[0]
-    if not isinstance(stmt, cst.SimpleStatementLine):
-        raise AssertionError(f"Could not parse import module {module_name!r}")
-    import_node = stmt.body[0]
-    if not isinstance(import_node, cst.ImportFrom) or import_node.module is None:
-        raise AssertionError(f"Could not parse import module {module_name!r}")
-    return import_node.module
+    return cst.parse_expression(module_name)
 
 
 def _is_name(node: cst.CSTNode, name: str) -> bool:
@@ -604,26 +480,31 @@ def _unwrap_to_thread(call: cst.Call) -> cst.Call:
     return cst.Call(func=first.value, args=tuple(rest))
 
 
-def _remove_param(params: cst.Parameters, name: str) -> cst.Parameters:
-    return params.with_changes(
-        params=tuple(param for param in params.params if param.name.value != name)
+def _assert_no_asyncio_references(module: cst.Module, pair: GeneratedPair) -> None:
+    visitor = _AsyncioReferenceVisitor()
+    _ = module.visit(visitor)
+    if not visitor.references:
+        return
+
+    references = ", ".join(sorted(visitor.references))
+    msg = (
+        f"{pair.source} still contains unsupported asyncio reference(s) after "
+        f"sync generation: {references}"
     )
+    raise ValueError(msg)
 
 
-def _is_download_transport_assignment(statement: cst.SimpleStatementLine) -> bool:
-    if len(statement.body) != 1:
-        return False
-    assignment = statement.body[0]
-    if not isinstance(assignment, cst.Assign) or len(assignment.targets) != 1:
-        return False
-    target = assignment.targets[0].target
-    if not (
-        isinstance(target, cst.Attribute)
-        and _is_name(target.value, "self")
-        and target.attr.value == "_download_transport"
-    ):
-        return False
-    return _is_name(assignment.value, "download_transport")
+class _AsyncioReferenceVisitor(cst.CSTVisitor):
+    def __init__(self) -> None:
+        super().__init__()
+        self.references: set[str] = set()
+
+    @override
+    def visit_Attribute(self, node: cst.Attribute) -> bool | None:
+        full_name = get_full_name_for_node(node)
+        if full_name and full_name.startswith("asyncio."):
+            self.references.add(full_name)
+        return True
 
 
 def _single_subscript_value(node: cst.Subscript) -> cst.BaseExpression | None:
@@ -695,11 +576,23 @@ def _run_ruff_fix(paths: Iterable[Path], cwd: Path = REPO_ROOT) -> None:
     if not path_args:
         return
 
+    config = str(cwd / "pyproject.toml")
     _run(
-        ["uv", "run", "ruff", "check", "--fix", "--select", "F401,I", *path_args],
+        [
+            "uv",
+            "run",
+            "ruff",
+            "check",
+            "--config",
+            config,
+            "--fix",
+            "--select",
+            "F401,I",
+            *path_args,
+        ],
         cwd=cwd,
     )
-    _run(["uv", "run", "ruff", "format", *path_args], cwd=cwd)
+    _run(["uv", "run", "ruff", "format", "--config", config, *path_args], cwd=cwd)
 
 
 def _run(command: list[str], cwd: Path) -> None:

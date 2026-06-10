@@ -229,6 +229,41 @@ def test_public_method_signatures_match_between_sync_and_async_classes() -> None
     assert not failures, "Sync/async signature mismatches:\n" + "\n".join(failures)
 
 
+def test_constructor_signatures_match_between_sync_and_async_classes() -> None:
+    failures: list[str] = []
+    seen_divergences: set[str] = set()
+    known_constructor_divergences = {
+        key for key in KNOWN_DIVERGENCES if key.endswith(".__init__")
+    }
+
+    for pair in _api_class_pairs():
+        sync_member = ApiMember(name="__init__", value=pair.sync_class.__init__)
+        async_member = ApiMember(name="__init__", value=pair.async_class.__init__)
+        divergence_key = f"{pair.sync_class.__name__}.__init__"
+
+        if _normalized_signature(sync_member) == _normalized_signature(async_member):
+            continue
+
+        if divergence_key in known_constructor_divergences:
+            seen_divergences.add(divergence_key)
+            continue
+
+        failures.append(
+            f"{pair.sync_class.__name__}.__init__ signature does not match "
+            f"{pair.async_class.__name__}.__init__\n"
+            f"  sync:  {_signature(sync_member)}\n"
+            f"  async: {_signature(async_member)}"
+        )
+
+    stale_divergences = sorted(known_constructor_divergences - seen_divergences)
+    for key in stale_divergences:
+        failures.append(f"{key} is listed in KNOWN_DIVERGENCES but now matches")
+
+    assert not failures, "Sync/async constructor signature mismatches:\n" + "\n".join(
+        failures
+    )
+
+
 def test_public_method_docstring_presence_matches() -> None:
     gaps: list[str] = []
 
@@ -380,6 +415,12 @@ def _normalized_annotation(annotation: Any) -> str:
     text = str(annotation).replace("typing.", "")
     text = re.sub(r"<class '([^']+)'>", r"\1", text)
     text = re.sub(r"\.async_([a-z_]+)\.", r".\1.", text)
+    text = re.sub(r"(?:collections\.abc\.)?Awaitable\[([^\]]+)\]", r"\1", text)
+    text = re.sub(
+        r"(?:collections\.abc\.)?Coroutine\[[^\]]+, [^\]]+, ([^\]]+)\]",
+        r"\1",
+        text,
+    )
 
     for async_type, sync_type in ANNOTATION_REPLACEMENTS:
         text = text.replace(async_type, sync_type)

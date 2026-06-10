@@ -21,7 +21,7 @@ from tests.unit.fakes.transport import FakeTransport
 
 
 def _build_service(fake_transport: FakeTransport) -> InvoicesService:
-    return InvoicesService(fake_transport, CertificateStore())
+    return InvoicesService(fake_transport, fake_transport, CertificateStore())
 
 
 def _ready_export_package() -> spec.InvoicePackage:

@@ -312,6 +312,7 @@ class AuthenticatedClient:
         """Return the invoices service with encryption support configured."""
         return InvoicesService(
             self._authed_transport,
+            self._transport,
             self._certificate_store,
             client=InvoicesClient(self._authed_transport),
             ensure_encryption_certificates_loaded=(

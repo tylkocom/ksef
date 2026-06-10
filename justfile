@@ -41,7 +41,6 @@ format-check:
 
 gen-sync:
     uv run python scripts/gen_sync.py
-    uv run ruff format $(uv run python scripts/gen_sync.py --print-files)
 
 check-gen-sync:
     uv run python scripts/gen_sync.py --check
