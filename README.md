@@ -42,6 +42,12 @@ uv add "ksef2[pdf]"
 
 The SDK currently supports KSeF OpenAPI version `2.6.0`.
 
+## Documentation
+
+Published documentation is available at <https://ksef2.stacking.me/sdk/>.
+The SDK owns its source documentation under [`docs/`](docs/); the separate
+`ksef2-docs` repository assembles and publishes the unified site.
+
 ## Quick Start
 
 ```python

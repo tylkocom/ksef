@@ -1,4 +1,7 @@
-# Error Handling
+---
+title: Error Handling
+description: Understand SDK exceptions, timeout errors, and KSeF API errors.
+---
 
 The SDK raises `KSeFException` subclasses for errors it can classify. Import
 stable exception classes from the package root:
@@ -91,9 +94,9 @@ Timeout exceptions raised by SDK-side polling helpers do not represent HTTP
 responses and do not expose `status_code`.
 
 - `KSeFAuthPollingTimeoutError`: authentication status polling exceeded
-  `max_poll_attempts`
+  `timeout`
 - `KSeFTokenStatusTimeoutError`: generated token status polling exceeded
-  `max_poll_attempts`
+  `timeout`
 - `KSeFInvoiceDownloadTimeoutError`: invoice download polling exceeded
   `timeout`
 - `KSeFInvoiceQueryTimeoutError`: invoice metadata polling exceeded `timeout`
@@ -102,9 +105,7 @@ responses and do not expose `status_code`.
   `timeout`
 - `KSeFBatchSessionTimeoutError`: batch session processing exceeded `timeout`
 
-The attempt-based timeout errors expose `reference_number`, `attempts`,
-`poll_interval`, and `elapsed`. Time-based timeout errors expose their relevant
-reference fields and `timeout`.
+Timeout errors expose their relevant reference fields and `timeout`.
 
 ```python
 from ksef2 import KSeFTokenStatusTimeoutError
@@ -113,10 +114,10 @@ try:
     token = auth.tokens.generate(
         permissions=["invoice_read"],
         description="Reporting",
-        max_poll_attempts=10,
+        timeout=10.0,
     )
 except KSeFTokenStatusTimeoutError as exc:
-    print(exc.reference_number, exc.attempts, exc.elapsed)
+    print(exc.reference_number, exc.timeout)
 ```
 
 ## Validation and SDK State Errors
