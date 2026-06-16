@@ -1,3 +1,5 @@
+"""Public package facade for the KSeF 2 SDK."""
+
 import os
 
 

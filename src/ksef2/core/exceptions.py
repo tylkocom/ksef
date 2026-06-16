@@ -1,3 +1,5 @@
+"""Public exception hierarchy raised by the KSeF SDK."""
+
 from typing import Any
 from pydantic import BaseModel
 from enum import IntEnum
@@ -14,6 +16,7 @@ class ExceptionCode(IntEnum):
 
     @staticmethod
     def from_code(code: int | None) -> "ExceptionCode":
+        """Return a known exception code or ``UNKNOWN_ERROR`` for unknown values."""
         try:
             return ExceptionCode(code)
         except ValueError:
