@@ -1,3 +1,9 @@
+## v0.17.1 (2026-06-16)
+
+### Docs
+
+- document public SDK exception contracts and API docstrings
+
 ## v0.17.0 (2026-06-04)
 
 ### Feat

@@ -1,10 +1,10 @@
 # Run integration tests (requires KSEF credentials in .env)
 integration:
-    source .env.test && uv run --extra pdf pytest tests/integration/ -v -m integration
+    source .env.test && uv run --extra pdf python -m pytest tests/integration/ -v -m integration
 
 # Run end-to-end example tests only (requires KSEF credentials in .env)
 e2e:
-    source .env.test && uv run --extra pdf pytest tests/integration/test_examples.py -v -m integration
+    source .env.test && uv run --extra pdf python -m pytest tests/integration/test_examples.py -v -m integration
 
 
 sync:
@@ -12,15 +12,15 @@ sync:
 
 
 test:
-    uv run pytest tests/unit/ -v
+    uv run python -m pytest tests/unit/ -v
 
 
 test-runtime-checks:
-    KSEF2_RUNTIME_CHECKS=1 uv run --extra runtime-checks pytest tests/unit/ -q
+    KSEF2_RUNTIME_CHECKS=1 uv run --extra runtime-checks python -m pytest tests/unit/ -q
 
 
 test-coverage:
-    uv run pytest --cov=ksef2 --cov-config=.coveragerc.toml --cov-report=xml tests/unit/ -v
+    uv run python -m pytest --cov=ksef2 --cov-config=.coveragerc.toml --cov-report=xml tests/unit/ -v
     uv run python scripts/test_coverage_badge.py
 
 
@@ -52,10 +52,10 @@ check-gen-sync:
 
 typecheck:
     #!/usr/bin/env bash
-    output=$(uv run basedpyright --level error 2>&1)
+    output=$(uv run --extra runtime-checks basedpyright --level error 2>&1)
     echo "$output"
     echo "$output" | grep -q "0 errors"
-    uv run basedpyright scripts/gen_sync.py
+    uv run --extra runtime-checks basedpyright scripts/gen_sync.py
 
 
 sync-ksef-api-version:
