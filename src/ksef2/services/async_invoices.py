@@ -27,6 +27,14 @@ logger = get_logger(__name__)
 
 @final
 class AsyncInvoicesService:
+    """Async invoice workflows with encryption, polling, and export helpers.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If a transport failure prevents the request.
+    """
+
     def __init__(
         self,
         transport: AsyncMiddleware,
@@ -62,6 +70,12 @@ class AsyncInvoicesService:
         filters: InvoicesFilter,
         params: InvoiceMetadataParams | None = None,
     ) -> AsyncIterator[QueryInvoicesMetadataResponse]:
+        """Fetch metadata pages, following KSeF page and truncation mechanics.
+
+        Raises:
+            KSeFMetadataPaginationError: If KSeF returns inconsistent pagination
+                boundaries.
+        """
         async for page in self._client.query_metadata_pages(
             filters=filters,
             params=params,
@@ -74,6 +88,12 @@ class AsyncInvoicesService:
         filters: InvoicesFilter,
         params: InvoiceMetadataParams | None = None,
     ) -> AsyncIterator[InvoiceMetadata]:
+        """Iterate over all invoice metadata items matching the provided filters.
+
+        Raises:
+            KSeFMetadataPaginationError: If KSeF returns inconsistent pagination
+                boundaries.
+        """
         async for invoice in self._client.all_metadata(filters=filters, params=params):
             yield invoice
 
@@ -87,7 +107,11 @@ class AsyncInvoicesService:
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> bytes:
-        """Poll until KSeF makes a processed invoice available for download."""
+        """Poll until KSeF makes a processed invoice available for download.
+
+        Raises:
+            KSeFInvoiceDownloadTimeoutError: If polling exceeds ``timeout``.
+        """
 
         async def _poll() -> bytes | None:
             try:
@@ -120,6 +144,13 @@ class AsyncInvoicesService:
         only_metadata: bool = False,
         compression_type: CompressionType | str | None = None,
     ) -> ExportHandle:
+        """Schedule an encrypted invoice export.
+
+        Raises:
+            NoCertificateAvailableError: If no valid symmetric-key certificate is
+                available.
+            KSeFEncryptionError: If export key encryption fails.
+        """
         await self._ensure_encryption_certificates_loaded()
         cert = self._certificate_store.get_valid("symmetric_key_encryption")
         return await self._client.schedule_export(
@@ -144,7 +175,14 @@ class AsyncInvoicesService:
         export: ExportHandle,
         target_directory: Path | str = Path("."),
     ) -> list[Path]:
-        """Download and decrypt all parts of an export package to disk."""
+        """Download and decrypt all parts of an export package to disk.
+
+        Raises:
+            KSeFEncryptionError: If a downloaded package part cannot be decrypted.
+            ValueError: If a package part name is unsafe for local filesystem output.
+            OSError: If the target directory or output file cannot be written.
+            httpx.HTTPStatusError: If a package part download returns an error status.
+        """
         target_path = Path(target_directory)
         await asyncio.to_thread(target_path.mkdir, parents=True, exist_ok=True)
 
@@ -185,7 +223,12 @@ class AsyncInvoicesService:
         package: InvoicePackage,
         export: ExportHandle,
     ) -> list[bytes]:
-        """Download and decrypt all parts of an export package in memory."""
+        """Download and decrypt all parts of an export package in memory.
+
+        Raises:
+            KSeFEncryptionError: If a downloaded package part cannot be decrypted.
+            httpx.HTTPStatusError: If a package part download returns an error status.
+        """
         result: list[bytes] = []
         for part in package.parts:
             logger.info(
@@ -212,6 +255,11 @@ class AsyncInvoicesService:
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> QueryInvoicesMetadataResponse:
+        """Poll invoice metadata until at least one invoice matches the filters.
+
+        Raises:
+            KSeFInvoiceQueryTimeoutError: If polling exceeds ``timeout``.
+        """
         return await async_poll_until(
             operation=lambda: self.query_metadata(filters=filters),
             retry_predicate=lambda result: not result.invoices,
@@ -229,6 +277,11 @@ class AsyncInvoicesService:
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> InvoicePackage:
+        """Poll export status until KSeF exposes a downloadable package.
+
+        Raises:
+            KSeFExportTimeoutError: If polling exceeds ``timeout``.
+        """
         status = await async_poll_until(
             operation=lambda: self.get_export_status(reference_number=reference_number),
             retry_predicate=lambda status: (
@@ -253,7 +306,15 @@ class AsyncInvoicesService:
         timeout: float = 120.0,
         poll_interval: float = 2.0,
     ) -> list[bytes]:
-        """Schedule an export, wait for it, and download the decrypted package."""
+        """Schedule an export, wait for it, and download the decrypted package.
+
+        Raises:
+            NoCertificateAvailableError: If no valid symmetric-key certificate is
+                available.
+            KSeFEncryptionError: If export key encryption or package decryption fails.
+            KSeFExportTimeoutError: If polling exceeds ``timeout``.
+            httpx.HTTPStatusError: If a package part download returns an error status.
+        """
         handle = await self.schedule_export(
             filters=filters,
             only_metadata=only_metadata,

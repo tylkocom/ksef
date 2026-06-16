@@ -11,7 +11,7 @@ from ksef2.infra.mappers.encryption import from_spec, to_spec
 
 @final
 class EncryptionClient:
-    """Async access to public encryption certificates published by KSeF."""
+    """Access to public encryption certificates published by KSeF."""
 
     def __init__(self, transport: Middleware) -> None:
         self._endpoints = EncryptionEndpoints(transport)

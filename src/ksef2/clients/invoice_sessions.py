@@ -19,7 +19,7 @@ from ksef2.infra.mappers.sessions import from_spec
 
 @final
 class InvoiceSessionsClient:
-    """Async browse historical online and batch invoice sessions."""
+    """Browse historical online and batch invoice sessions."""
 
     def __init__(self, transport: Middleware) -> None:
         self._endpoints = SessionEndpoints(transport)

@@ -63,7 +63,7 @@ from ksef2.infra.mappers.permissions import (
 
 @final
 class PermissionsClient:
-    """Async high-level API for permission grants, revocations, and queries."""
+    """High-level API for permission grants, revocations, and queries."""
 
     def __init__(self, transport: Middleware) -> None:
         self._grant_eps = PermissionsGrantEndpoints(transport)

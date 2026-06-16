@@ -21,7 +21,13 @@ from ksef2.infra.mappers.tokens import from_spec, to_spec
 
 @final
 class TokensClient:
-    """Async high-level API for the KSeF token lifecycle."""
+    """High-level API for the KSeF token lifecycle.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If a transport failure prevents the request.
+    """
 
     def __init__(self, transport: Middleware) -> None:
         self._endpoints = TokenEndpoints(transport)
@@ -77,8 +83,7 @@ class TokensClient:
             The token payload returned immediately after creation.
 
         Raises:
-            KSeFApiError: If activation ends in a terminal failure state or polling
-                exceeds ``timeout``.
+            KSeFApiError: If activation ends in a terminal failure state.
             KSeFTokenStatusTimeoutError: If polling exceeds ``timeout``.
         """
         request = GenerateTokenRequest(

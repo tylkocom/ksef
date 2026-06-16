@@ -27,7 +27,13 @@ from ksef2.services.batch_preparation import (
 
 @final
 class BatchService:
-    """Async high-level workflow for preparing and sending invoice batches."""
+    """High-level workflow for preparing and sending invoice batches.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If a transport failure prevents the request.
+    """
 
     def __init__(
         self,
@@ -62,6 +68,12 @@ class BatchService:
         Returns:
             A prepared batch with encrypted part payloads and the metadata required
             to open a batch session.
+
+        Raises:
+            NoCertificateAvailableError: If no valid symmetric-key certificate is
+                available.
+            KSeFEncryptionError: If key or part encryption fails.
+            KSeFValidationError: If the invoice list or part size is invalid.
         """
         aes_key, iv, encrypted_key, public_key_id = self._get_encryption_key()
         return prepare_batch_package(
@@ -93,6 +105,13 @@ class BatchService:
 
         Returns:
             A prepared batch with encrypted parts ready to be uploaded.
+
+        Raises:
+            FileNotFoundError: If an invoice XML path does not exist.
+            NoCertificateAvailableError: If no valid symmetric-key certificate is
+                available.
+            KSeFEncryptionError: If key or part encryption fails.
+            KSeFValidationError: If the invoice list or part size is invalid.
         """
         invoices = load_batch_invoices(invoice_paths)
         return self.prepare_batch(
@@ -114,6 +133,9 @@ class BatchService:
 
         Returns:
             A session client exposing the upload instructions returned by KSeF.
+
+        Raises:
+            KSeFValidationError: If the prepared batch cannot be opened.
         """
         return self._open_session(prepared_batch=prepared_batch)
 
@@ -145,6 +167,12 @@ class BatchService:
         Args:
             session: Open batch session that already contains upload instructions.
             prepared_batch: Prepared batch whose part ordinals match the session.
+
+        Raises:
+            KSeFClientClosedError: If the session client is closed.
+            KSeFValidationError: If prepared part ordinals do not match session upload
+                instructions.
+            httpx.HTTPError: If uploading a part to its presigned URL fails.
         """
         upload_requests = {
             request.ordinal_number: request for request in session.part_upload_requests
@@ -187,6 +215,11 @@ class BatchService:
 
         Returns:
             Serializable state of the submitted batch session.
+
+        Raises:
+            KSeFClientClosedError: If the session client closes before upload.
+            KSeFValidationError: If the prepared batch cannot be opened or uploaded.
+            httpx.HTTPError: If uploading a part to its presigned URL fails.
         """
         with self.open_session(prepared_batch=prepared_batch) as session:
             state = session.get_state()
@@ -211,6 +244,14 @@ class BatchService:
 
         Returns:
             Serializable state of the submitted batch session.
+
+        Raises:
+            NoCertificateAvailableError: If no valid symmetric-key certificate is
+                available.
+            KSeFEncryptionError: If key or part encryption fails.
+            KSeFValidationError: If preparation, session opening, or upload validation
+                fails.
+            httpx.HTTPError: If uploading a part to its presigned URL fails.
         """
         prepared_batch = self.prepare_batch(
             invoices=invoices,
@@ -305,6 +346,10 @@ class BatchService:
 
         Returns:
             Final successful batch session status.
+
+        Raises:
+            KSeFSessionError: If batch processing reaches a failed terminal status.
+            KSeFBatchSessionTimeoutError: If polling exceeds ``timeout``.
         """
         reference_number = self._resolve_reference_number(session)
 

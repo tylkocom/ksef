@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Any
 from pydantic import BaseModel
 from enum import IntEnum
@@ -15,7 +13,7 @@ class ExceptionCode(IntEnum):
     NOT_PROCESSED_YET = 21165
 
     @staticmethod
-    def from_code(code: int | None) -> ExceptionCode:
+    def from_code(code: int | None) -> "ExceptionCode":
         try:
             return ExceptionCode(code)
         except ValueError:

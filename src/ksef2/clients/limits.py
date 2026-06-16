@@ -11,7 +11,7 @@ from ksef2.infra.mappers.limits import from_spec, to_spec
 
 @final
 class LimitsClient:
-    """Async read and override KSeF context, subject, and API rate limits."""
+    """Read and override KSeF context, subject, and API rate limits."""
 
     def __init__(self, transport: Middleware) -> None:
         self._endpoints = LimitEndpoints(transport)

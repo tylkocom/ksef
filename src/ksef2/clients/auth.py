@@ -40,7 +40,13 @@ def _build_signed_xades(
 
 @final
 class AuthClient:
-    """Async entry point for creating authenticated SDK clients."""
+    """Entry point for creating authenticated SDK clients.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If a transport failure prevents the request.
+    """
 
     def __init__(
         self,
@@ -78,6 +84,7 @@ class AuthClient:
         Raises:
             NoCertificateAvailableError: If no valid token-encryption certificate is
                 available.
+            KSeFEncryptionError: If token encryption fails.
             KSeFAuthError: If authentication fails.
             KSeFAuthPollingTimeoutError: If polling exceeds ``timeout``.
         """
@@ -136,6 +143,10 @@ class AuthClient:
 
         Returns:
             An authenticated client with redeemed access and refresh tokens.
+
+        Raises:
+            KSeFAuthError: If authentication fails.
+            KSeFAuthPollingTimeoutError: If polling exceeds ``timeout``.
         """
         challenge = from_spec(self._auth_ep.challenge())
         signed_xml = _build_signed_xades(
@@ -168,7 +179,13 @@ class AuthClient:
         timeout: float = 60.0,
         poll_interval: float = 1.0,
     ) -> AuthenticatedClient:
-        """Authenticate in the TEST environment using an SDK-generated certificate."""
+        """Authenticate in the TEST environment using an SDK-generated certificate.
+
+        Raises:
+            KSeFUnsupportedEnvironmentError: If the client is not configured for TEST.
+            KSeFAuthError: If authentication fails.
+            KSeFAuthPollingTimeoutError: If polling exceeds ``timeout``.
+        """
         if self._environment is not Environment.TEST:
             raise exceptions.KSeFUnsupportedEnvironmentError(
                 "with_test_certificate() is only available for Environment.TEST"

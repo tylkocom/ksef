@@ -31,7 +31,7 @@ from ksef2.infra.mappers.certificates import from_spec, to_spec
 
 @final
 class CertificatesClient:
-    """Async high-level API for certificate enrollment, retrieval, and search."""
+    """High-level API for certificate enrollment, retrieval, and search."""
 
     def __init__(self, transport: Middleware) -> None:
         self._endpoints = CertificatesEndpoints(transport)

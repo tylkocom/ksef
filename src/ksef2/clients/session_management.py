@@ -12,7 +12,7 @@ from ksef2.infra.mappers.auth import from_spec
 
 @final
 class SessionManagementClient:
-    """Async manage authentication sessions opened through the auth API."""
+    """Manage authentication sessions opened through the auth API."""
 
     def __init__(self, transport: Middleware) -> None:
         self._auth_ep = AuthEndpoints(transport)

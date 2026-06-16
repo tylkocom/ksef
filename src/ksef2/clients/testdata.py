@@ -35,7 +35,7 @@ logger = get_logger(__name__)
 
 @final
 class TestDataClient:
-    """Async helper for TEST-only endpoints that seed and mutate sandbox data."""
+    """Helper for TEST-only endpoints that seed and mutate sandbox data."""
 
     def __init__(self, transport: Middleware) -> None:
         self._endpoints = TestDataEndpoints(transport)
@@ -142,7 +142,7 @@ class TestDataClient:
 
 @final
 class TemporalTestData:
-    """Async context manager that records testdata mutations and reverts them on exit."""
+    """Context manager that records testdata mutations and reverts them on exit."""
 
     def __init__(self, client: TestDataClient) -> None:
         self._client = client

@@ -13,7 +13,7 @@ from ksef2.infra.mappers.peppol import from_spec
 
 @final
 class PeppolClient:
-    """Async service for querying Peppol service providers."""
+    """Service for querying Peppol service providers."""
 
     def __init__(self, transport: Middleware):
         self._transport = transport

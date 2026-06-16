@@ -153,7 +153,10 @@ definitions, references, and strings used in `repr`/error messages if any.
   exist.
 
 **R7 — docstring pass** (docstrings only, simple string replaces):
-`"async with"`→`"with"`, `"await "`→`""`, `"AsyncClient"`→`"Client"`,
+Use phrase-specific replacements for known docstring wording, such as
+`"Async high-level"`→`"High-level"`, `"Async client"`→`"Client"`,
+`"Root async"`→`"Root"`, `"Raw async"`→`"Raw"`, `"async with"`→`"with"`,
+`"await "`→`""`, `"AsyncClient"`→`"Client"`, and
 `"async context manager"`→`"context manager"`. Keep this list short and
 conservative; minor residual async phrasing in a docstring is acceptable,
 broken docstrings are not.

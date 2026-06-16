@@ -38,7 +38,13 @@ from ksef2.services.async_invoices import AsyncInvoicesService
 
 @final
 class AsyncAuthenticatedClient:
-    """Authenticated async entry point for KSeF operations."""
+    """Authenticated async entry point for KSeF operations.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If a transport failure prevents the request.
+    """
 
     def __init__(
         self,
@@ -85,7 +91,13 @@ class AsyncAuthenticatedClient:
         return aes_key, iv, encrypted_key, cert.public_key_id
 
     async def get_encryption_key(self) -> tuple[bytes, bytes, bytes]:
-        """Generate a session AES key, IV, and encrypted symmetric key payload."""
+        """Generate a session AES key, IV, and encrypted symmetric key payload.
+
+        Raises:
+            NoCertificateAvailableError: If no valid symmetric-key certificate is
+                available.
+            KSeFEncryptionError: If symmetric-key encryption fails.
+        """
         (
             aes_key,
             iv,
@@ -99,7 +111,13 @@ class AsyncAuthenticatedClient:
         *,
         form_code: FormSchema,
     ) -> _AwaitableSession[AsyncOnlineSessionClient]:
-        """Open a new online invoice session and return a bound session client."""
+        """Open a new online invoice session and return a bound session client.
+
+        Raises:
+            NoCertificateAvailableError: If no valid symmetric-key certificate is
+                available.
+            KSeFEncryptionError: If symmetric-key encryption fails.
+        """
         return _AwaitableSession(self._open_online_session(form_code=form_code))
 
     async def _open_online_session(
@@ -161,6 +179,12 @@ class AsyncAuthenticatedClient:
 
         Returns:
             A bound batch session client exposing presigned upload instructions.
+
+        Raises:
+            NoCertificateAvailableError: If certificate-backed encryption material is
+                needed but no valid certificate is available.
+            KSeFEncryptionError: If symmetric-key encryption fails.
+            KSeFValidationError: If neither or both batch inputs are provided.
         """
         return _AwaitableSession(
             self._open_batch_session_from_input(
@@ -245,6 +269,9 @@ class AsyncAuthenticatedClient:
 
         Returns:
             A bound batch session client exposing presigned upload instructions.
+
+        Raises:
+            KSeFValidationError: If the batch session request is invalid.
         """
         return _AwaitableSession(
             self._open_batch_session(

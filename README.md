@@ -163,10 +163,11 @@ See [`docs/guides/async-client.md`](docs/guides/async-client.md) for async usage
 
 ## Error Handling
 
-Catch stable SDK exception classes from the package root, for example
-`KSeFApiError`, `KSeFRateLimitError`, and the polling timeout errors. See
-[`docs/guides/errors.md`](docs/guides/errors.md) for the exception hierarchy,
-KSeF `ExceptionCode` handling, retry patterns, and timeout semantics.
+Catch stable SDK exception classes from the package root. See
+[`docs/guides/errors.md`](docs/guides/errors.md) for the public catch contract,
+including SDK-classified errors, `httpx.HTTPError` transport failures,
+`KSeFValidationError`, KSeF `ExceptionCode` handling, retry patterns, and
+timeout semantics.
 
 ## Features
 
