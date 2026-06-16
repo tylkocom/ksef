@@ -11,7 +11,18 @@ from ksef2.infra.mappers.limits import from_spec, to_spec
 
 @final
 class LimitsClient:
-    """Read and override KSeF context, subject, and API rate limits."""
+    """Read and override KSeF context, subject, and API rate limits.
+
+    Catch ``KSeFException`` for SDK-classified failures raised by this branch,
+    and ``httpx.HTTPError`` for transport failures.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response. Catch
+            ``KSeFAuthError`` for authentication or authorization failures and
+            ``KSeFRateLimitError`` for throttling.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
+    """
 
     def __init__(self, transport: Middleware) -> None:
         self._endpoints = LimitEndpoints(transport)

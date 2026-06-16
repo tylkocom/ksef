@@ -42,10 +42,15 @@ from ksef2.services.invoices import InvoicesService
 class AuthenticatedClient:
     """Authenticated entry point for KSeF operations.
 
+    Catch ``KSeFException`` for SDK-classified failures raised by authenticated
+    branches, and ``httpx.HTTPError`` for transport failures.
+
     Raises:
-        KSeFApiError: If KSeF returns an API error response.
+        KSeFApiError: If KSeF returns an API error response. Catch
+            ``KSeFAuthError`` for authentication or authorization failures and
+            ``KSeFRateLimitError`` for throttling.
         KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
-        httpx.HTTPError: If a transport failure prevents the request.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
     """
 
     def __init__(
@@ -363,24 +368,30 @@ class AuthenticatedClient:
 
     @cached_property
     def limits(self) -> LimitsClient:
+        """Return the authenticated rate-limit branch."""
         return LimitsClient(self._authed_transport)
 
     @cached_property
     def tokens(self) -> TokensClient:
+        """Return the authenticated token lifecycle branch."""
         return TokensClient(self._authed_transport)
 
     @cached_property
     def certificates(self) -> CertificatesClient:
+        """Return the authenticated certificate enrollment branch."""
         return CertificatesClient(self._authed_transport)
 
     @cached_property
     def sessions(self) -> SessionManagementClient:
+        """Return the authenticated session-management branch."""
         return SessionManagementClient(self._authed_transport)
 
     @cached_property
     def invoice_sessions(self) -> InvoiceSessionsClient:
+        """Return the authenticated invoice-session history branch."""
         return InvoiceSessionsClient(self._authed_transport)
 
     @cached_property
     def permissions(self) -> PermissionsClient:
+        """Return the authenticated permissions branch."""
         return PermissionsClient(self._authed_transport)

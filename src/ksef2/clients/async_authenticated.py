@@ -40,10 +40,15 @@ from ksef2.services.async_invoices import AsyncInvoicesService
 class AsyncAuthenticatedClient:
     """Authenticated async entry point for KSeF operations.
 
+    Catch ``KSeFException`` for SDK-classified failures raised by authenticated
+    branches, and ``httpx.HTTPError`` for transport failures.
+
     Raises:
-        KSeFApiError: If KSeF returns an API error response.
+        KSeFApiError: If KSeF returns an API error response. Catch
+            ``KSeFAuthError`` for authentication or authorization failures and
+            ``KSeFRateLimitError`` for throttling.
         KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
-        httpx.HTTPError: If a transport failure prevents the request.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
     """
 
     def __init__(
@@ -365,24 +370,30 @@ class AsyncAuthenticatedClient:
 
     @cached_property
     def limits(self) -> AsyncLimitsClient:
+        """Return the authenticated rate-limit branch."""
         return AsyncLimitsClient(self._authed_transport)
 
     @cached_property
     def tokens(self) -> AsyncTokensClient:
+        """Return the authenticated token lifecycle branch."""
         return AsyncTokensClient(self._authed_transport)
 
     @cached_property
     def certificates(self) -> AsyncCertificatesClient:
+        """Return the authenticated certificate enrollment branch."""
         return AsyncCertificatesClient(self._authed_transport)
 
     @cached_property
     def sessions(self) -> AsyncSessionManagementClient:
+        """Return the authenticated session-management branch."""
         return AsyncSessionManagementClient(self._authed_transport)
 
     @cached_property
     def invoice_sessions(self) -> AsyncInvoiceSessionsClient:
+        """Return the authenticated invoice-session history branch."""
         return AsyncInvoiceSessionsClient(self._authed_transport)
 
     @cached_property
     def permissions(self) -> AsyncPermissionsClient:
+        """Return the authenticated permissions branch."""
         return AsyncPermissionsClient(self._authed_transport)

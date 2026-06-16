@@ -28,10 +28,15 @@ from ksef2.services.batch_preparation import (
 class AsyncBatchService:
     """Async high-level workflow for preparing and sending invoice batches.
 
+    Catch ``KSeFException`` for SDK-classified failures raised by this service,
+    and ``httpx.HTTPError`` for transport failures.
+
     Raises:
-        KSeFApiError: If KSeF returns an API error response.
+        KSeFApiError: If KSeF returns an API error response. Catch
+            ``KSeFAuthError`` for authentication or authorization failures and
+            ``KSeFRateLimitError`` for throttling.
         KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
-        httpx.HTTPError: If a transport failure prevents the request.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
     """
 
     def __init__(

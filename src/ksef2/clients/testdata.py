@@ -35,7 +35,18 @@ logger = get_logger(__name__)
 
 @final
 class TestDataClient:
-    """Helper for TEST-only endpoints that seed and mutate sandbox data."""
+    """Helper for TEST-only endpoints that seed and mutate sandbox data.
+
+    Catch ``KSeFException`` for SDK-classified failures raised by this branch,
+    and ``httpx.HTTPError`` for transport failures.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response. Catch
+            ``KSeFAuthError`` for authentication or authorization failures and
+            ``KSeFRateLimitError`` for throttling.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
+    """
 
     def __init__(self, transport: Middleware) -> None:
         self._endpoints = TestDataEndpoints(transport)
@@ -142,7 +153,16 @@ class TestDataClient:
 
 @final
 class TemporalTestData:
-    """Context manager that records testdata mutations and reverts them on exit."""
+    """Context manager that records testdata mutations and reverts them on exit.
+
+    Cleanup failures are logged and suppressed. Direct mutation methods expose
+    the same catch contract as the parent test-data branch.
+
+    Raises:
+        KSeFApiError: If KSeF returns an API error response during direct mutations.
+        KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
+    """
 
     def __init__(self, client: TestDataClient) -> None:
         self._client = client

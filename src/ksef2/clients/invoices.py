@@ -29,10 +29,15 @@ from ksef2.infra.mappers.invoices import from_spec, to_spec
 class InvoicesClient:
     """Low-level invoice API used by higher-level invoice services.
 
+    Catch ``KSeFException`` for SDK-classified failures raised by this branch,
+    and ``httpx.HTTPError`` for transport failures.
+
     Raises:
-        KSeFApiError: If KSeF returns an API error response.
+        KSeFApiError: If KSeF returns an API error response. Catch
+            ``KSeFAuthError`` for authentication or authorization failures and
+            ``KSeFRateLimitError`` for throttling.
         KSeFValidationError: If a KSeF response cannot be parsed into SDK models.
-        httpx.HTTPError: If a transport failure prevents the request.
+        httpx.HTTPError: If the HTTP transport fails before KSeF returns a response.
     """
 
     def __init__(self, transport: Middleware) -> None:
