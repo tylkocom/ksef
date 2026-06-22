@@ -11,30 +11,20 @@ Run with:
 from __future__ import annotations
 
 import time
-from pathlib import Path
 
 import pytest
 
-from ksef2 import Client, FormSchema, Environment
+from ksef2 import Client, Environment, FormSchema
 from ksef2.clients.online import OnlineSessionClient
-from ksef2.core.invoices import InvoiceTemplater
 from ksef2.core.tools import generate_nip, generate_pesel
-from ksef2.core.xades import generate_test_certificate
+from ksef2.xades import generate_test_certificate
 from ksef2.domain.models.session import OnlineSessionState, SessionStatusResponse
 from ksef2.domain.models.testdata import (
     Identifier,
     Permission,
 )
 from ksef2.endpoints.session import SessionEndpoints
-
-INVOICE_TEMPLATE_PATH = (
-    Path(__file__).resolve().parents[2]
-    / "docs"
-    / "assets"
-    / "sample_invoices"
-    / "fa3"
-    / "invoice-template-fa-3-with-custom-subject_2.xml"
-)
+from tests.integration.sample_invoice import build_sample_invoice_xml
 
 
 @pytest.fixture(scope="module")
@@ -91,15 +81,10 @@ def workflow_context():
         access_token = auth.access_token
 
         with auth.online_session(form_code=FormSchema.FA3) as session:
-            template_xml = INVOICE_TEMPLATE_PATH.read_text(encoding="utf-8")
-            invoice_xml = InvoiceTemplater.create(
-                template_xml,
-                {
-                    "#nip#": seller_nip,
-                    "#subject2nip#": buyer_nip,
-                    "#invoicing_date#": "2026-02-16",
-                    "#invoice_number#": str(int(time.time())),
-                },
+            invoice_xml = build_sample_invoice_xml(
+                seller_nip=seller_nip,
+                buyer_nip=buyer_nip,
+                invoice_number=str(int(time.time())),
             )
             result = session.send_invoice(invoice_xml=invoice_xml)
 
@@ -275,17 +260,11 @@ def test_get_session_upo_by_reference():
             private_key=private_key,
         )
 
-        template_xml = INVOICE_TEMPLATE_PATH.read_text(encoding="utf-8")
-
         with auth.online_session(form_code=FormSchema.FA3) as session:
-            invoice_xml = InvoiceTemplater.create(
-                template_xml,
-                {
-                    "#nip#": seller_nip,
-                    "#subject2nip#": buyer_nip,
-                    "#invoicing_date#": "2026-02-16",
-                    "#invoice_number#": f"UPO-{int(time.time())}",
-                },
+            invoice_xml = build_sample_invoice_xml(
+                seller_nip=seller_nip,
+                buyer_nip=buyer_nip,
+                invoice_number=f"UPO-{int(time.time())}",
             )
             _ = session.send_invoice(invoice_xml=invoice_xml)
             state = session.get_state()

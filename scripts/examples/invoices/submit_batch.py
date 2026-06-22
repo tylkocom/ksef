@@ -10,15 +10,13 @@ What it demonstrates:
 - listing processed invoices and downloading the collective UPO
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
-from pathlib import Path
 
 from ksef2 import Client, Environment, FormSchema
-from ksef2.core.invoices import InvoiceTemplater
 from ksef2.core.tools import generate_nip
 from ksef2.domain.models import BatchInvoice
-from scripts.examples._common import repo_root
+from scripts.examples._common import build_sample_invoice_xml
 
 
 @dataclass
@@ -27,23 +25,11 @@ class ExampleConfig:
     invoice_count: int = 2
     poll_interval: float = 2.0
     status_timeout: float = 120.0
-    template_path: Path = field(
-        default_factory=lambda: (
-            repo_root()
-            / "docs"
-            / "assets"
-            / "sample_invoices"
-            / "fa3"
-            / "invoice-template_v3.xml"
-        )
-    )
 
 
-def build_invoices(
-    *, seller_nip: str, template_xml: str, count: int
-) -> list[BatchInvoice]:
+def build_invoices(*, seller_nip: str, count: int) -> list[BatchInvoice]:
     now = datetime.now(tz=timezone.utc)
-    today = now.date().isoformat()
+    today = now.date()
     invoices: list[BatchInvoice] = []
 
     for ordinal in range(1, count + 1):
@@ -51,13 +37,10 @@ def build_invoices(
         invoices.append(
             BatchInvoice(
                 file_name=f"invoice-{ordinal:02d}.xml",
-                content=InvoiceTemplater.create(
-                    template_xml,
-                    {
-                        "#nip#": seller_nip,
-                        "#invoicing_date#": today,
-                        "#invoice_number#": invoice_number,
-                    },
+                content=build_sample_invoice_xml(
+                    seller_nip=seller_nip,
+                    issue_date=today,
+                    invoice_number=invoice_number,
                 ),
             )
         )
@@ -77,10 +60,8 @@ def run(config: ExampleConfig) -> None:
         )
 
         auth = client.authentication.with_test_certificate(nip=seller_nip)
-        template_xml = config.template_path.read_text(encoding="utf-8")
         invoices = build_invoices(
             seller_nip=seller_nip,
-            template_xml=template_xml,
             count=config.invoice_count,
         )
 

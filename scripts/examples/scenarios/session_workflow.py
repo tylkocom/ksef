@@ -13,26 +13,16 @@ What it demonstrates:
 import random
 from dataclasses import dataclass
 from datetime import date
-from pathlib import Path
 
 from ksef2 import Client, Environment, FormSchema
-from ksef2.core.invoices import InvoiceTemplater
 from ksef2.core.tools import generate_nip, generate_pesel
 from ksef2.domain.models import Identifier, Permission
-from scripts.examples._common import repo_root
+from scripts.examples._common import build_sample_invoice_xml
 
 
 @dataclass
 class ExampleConfig:
     environment: Environment = Environment.TEST
-    template_path: Path = (
-        repo_root()
-        / "docs"
-        / "assets"
-        / "sample_invoices"
-        / "fa3"
-        / "invoice-template_v3.xml"
-    )
 
 
 def run(config: ExampleConfig) -> None:
@@ -66,7 +56,6 @@ def run(config: ExampleConfig) -> None:
         )
 
         auth = client.authentication.with_test_certificate(nip=organization_nip)
-        template_xml = config.template_path.read_text(encoding="utf-8")
 
         with auth.online_session(form_code=FormSchema.FA3) as session:
             print("Session state:")
@@ -78,13 +67,10 @@ def run(config: ExampleConfig) -> None:
             print("Invoices before sending:")
             print(session.list_invoices().model_dump_json(indent=2))
 
-            invoice_xml = InvoiceTemplater.create(
-                template_xml,
-                {
-                    "#nip#": organization_nip,
-                    "#invoicing_date#": date.today().isoformat(),
-                    "#invoice_number#": str(random.randint(1, 1000)),
-                },
+            invoice_xml = build_sample_invoice_xml(
+                seller_nip=organization_nip,
+                issue_date=date.today(),
+                invoice_number=str(random.randint(1, 1000)),
             )
 
             invoice_ref = session.send_invoice(invoice_xml=invoice_xml)

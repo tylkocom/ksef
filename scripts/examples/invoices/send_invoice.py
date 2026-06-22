@@ -11,25 +11,15 @@ What it demonstrates:
 
 from dataclasses import dataclass
 from datetime import date
-from pathlib import Path
 
 from ksef2 import Client, Environment, FormSchema
-from ksef2.core.invoices import InvoiceTemplater
 from ksef2.core.tools import generate_nip
-from scripts.examples._common import repo_root
+from scripts.examples._common import build_sample_invoice_xml
 
 
 @dataclass
 class ExampleConfig:
     environment: Environment = Environment.TEST
-    template_path: Path = (
-        repo_root()
-        / "docs"
-        / "assets"
-        / "sample_invoices"
-        / "fa3"
-        / "invoice-template-fa-3-with-custom-subject_2.xml"
-    )
 
 
 def run(config: ExampleConfig) -> None:
@@ -45,18 +35,14 @@ def run(config: ExampleConfig) -> None:
         )
 
         auth = client.authentication.with_test_certificate(nip=seller_nip)
-        template_xml = config.template_path.read_text(encoding="utf-8")
 
         with auth.online_session(form_code=FormSchema.FA3) as session:
             result = session.send_invoice(
-                invoice_xml=InvoiceTemplater.create(
-                    template_xml,
-                    {
-                        "#nip#": seller_nip,
-                        "#subject2nip#": buyer_nip,
-                        "#invoicing_date#": date.today().isoformat(),
-                        "#invoice_number#": f"DEMO-{date.today():%Y%m%d}-{buyer_nip[-4:]}",
-                    },
+                invoice_xml=build_sample_invoice_xml(
+                    seller_nip=seller_nip,
+                    buyer_nip=buyer_nip,
+                    issue_date=date.today(),
+                    invoice_number=f"DEMO-{date.today():%Y%m%d}-{buyer_nip[-4:]}",
                 )
             )
 

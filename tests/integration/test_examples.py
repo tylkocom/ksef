@@ -12,8 +12,6 @@ from pathlib import Path
 
 import pytest
 
-from ksef2 import Client
-from ksef2.core.exceptions import KSeFExportTimeoutError
 import scripts.examples.auth.auth_refresh as auth_refresh_example
 import scripts.examples.auth.auth_xades as auth_xades_example
 import scripts.examples.auth.token_management as token_management_example
@@ -32,6 +30,8 @@ import scripts.examples.session.session_resume as session_resume_example
 import scripts.examples.testdata.attachments as attachments_example
 import scripts.examples.testdata.block_context as block_context_example
 import scripts.examples.testdata.setup_test_data as setup_test_data_example
+from ksef2 import Client
+from ksef2.core.exceptions import KSeFExportTimeoutError
 
 # ── auth ──────────────────────────────────────────────────────────────────────
 
@@ -161,14 +161,6 @@ def test_example_download_and_export_to_pdf(tmp_path: Path) -> None:
 
     pdf_export_example.run(
         pdf_export_example.ExampleConfig(
-            template_path=(
-                Path(__file__).parents[2]
-                / "docs"
-                / "assets"
-                / "sample_invoices"
-                / "fa3"
-                / "invoice-template-fa-3-with-custom-subject_2.xml"
-            ),
             downloads_dir=tmp_path,
         )
     )

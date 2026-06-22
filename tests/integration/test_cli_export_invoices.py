@@ -21,18 +21,9 @@ from cryptography.hazmat.primitives.serialization import (
 )
 
 from ksef2 import Client, Environment, FormSchema
-from ksef2.core.invoices import InvoiceTemplater
 from ksef2.core.tools import generate_nip
-from ksef2.core.xades import generate_test_certificate
-
-INVOICE_TEMPLATE_PATH = (
-    Path(__file__).resolve().parents[2]
-    / "docs"
-    / "assets"
-    / "sample_invoices"
-    / "fa3"
-    / "invoice-template-fa-3-with-custom-subject_2.xml"
-)
+from ksef2.xades import generate_test_certificate
+from tests.integration.sample_invoice import build_sample_invoice_xml
 
 
 @pytest.mark.integration
@@ -70,14 +61,11 @@ def test_cli_export_invoices_with_pem(tmp_path: Path) -> None:
             nip=seller_nip, cert=seller_cert, private_key=seller_key
         )
         with seller_auth.online_session(form_code=FormSchema.FA3) as session:
-            invoice_xml = InvoiceTemplater.create(
-                template_xml=INVOICE_TEMPLATE_PATH.read_text(encoding="utf-8"),
-                replacements={
-                    "#nip#": seller_nip,
-                    "#subject2nip#": buyer_nip,
-                    "#invoicing_date#": date.today().isoformat(),
-                    "#invoice_number#": str(int(time.time() * 1000)),
-                },
+            invoice_xml = build_sample_invoice_xml(
+                seller_nip=seller_nip,
+                buyer_nip=buyer_nip,
+                issue_date=date.today(),
+                invoice_number=str(int(time.time() * 1000)),
             )
             result = session.send_invoice(invoice_xml=invoice_xml)
             print(f"Invoice sent: {result.reference_number}")

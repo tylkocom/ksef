@@ -14,10 +14,9 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from ksef2 import Client, Environment, FormSchema
-from ksef2.core.invoices import InvoiceTemplater
 from ksef2.core.tools import generate_nip
 from ksef2.domain.models import InvoicesFilter
-from scripts.examples._common import repo_root
+from scripts.examples._common import build_sample_invoice_xml, repo_root
 
 
 @dataclass
@@ -26,16 +25,6 @@ class ExampleConfig:
     poll_interval: float = 2.0
     status_timeout: float = 60.0
     export_timeout: float = 120.0
-    template_path: Path = field(
-        default_factory=lambda: (
-            repo_root()
-            / "docs"
-            / "assets"
-            / "sample_invoices"
-            / "fa3"
-            / "invoice-template_v3.xml"
-        )
-    )
     download_dir: Path = field(
         default_factory=lambda: repo_root() / "downloads" / "invoice_export"
     )
@@ -53,14 +42,10 @@ def run(config: ExampleConfig) -> None:
         )
 
         auth = client.authentication.with_test_certificate(nip=seller_nip)
-        template_xml = config.template_path.read_text(encoding="utf-8")
-        invoice_xml = InvoiceTemplater.create(
-            template_xml,
-            {
-                "#nip#": seller_nip,
-                "#invoicing_date#": date.today().isoformat(),
-                "#invoice_number#": f"DEMO-{datetime.now(tz=timezone.utc):%Y%m%d%H%M%S}",
-            },
+        invoice_xml = build_sample_invoice_xml(
+            seller_nip=seller_nip,
+            issue_date=date.today(),
+            invoice_number=f"DEMO-{datetime.now(tz=timezone.utc):%Y%m%d%H%M%S}",
         )
 
         with auth.online_session(form_code=FormSchema.FA3) as session:

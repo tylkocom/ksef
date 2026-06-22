@@ -15,27 +15,16 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from ksef2 import Client, Environment, FormSchema
-from ksef2.core.invoices import InvoiceTemplater
 from ksef2.core.packages import PackageReader
 from ksef2.core.tools import generate_nip
 from ksef2.domain.models import InvoicesFilter
 from ksef2.services.renderers import InvoicePDFExporter
-from scripts.examples._common import repo_root
+from scripts.examples._common import build_sample_invoice_xml, repo_root
 
 
 @dataclass
 class ExampleConfig:
     environment: Environment = Environment.TEST
-    template_path: Path = field(
-        default_factory=lambda: (
-            repo_root()
-            / "docs"
-            / "assets"
-            / "sample_invoices"
-            / "fa3"
-            / "invoice-template-fa-3-with-custom-subject_2.xml"
-        )
-    )
     downloads_dir: Path = field(
         default_factory=lambda: repo_root() / "downloads" / "pdf_export"
     )
@@ -43,23 +32,17 @@ class ExampleConfig:
 
 def send_invoice(
     client: Client,
-    template_path: Path,
     seller_nip: str,
     buyer_nip: str,
 ) -> None:
     seller_auth = client.authentication.with_test_certificate(nip=seller_nip)
-    template_xml = template_path.read_text(encoding="utf-8")
 
     with seller_auth.online_session(form_code=FormSchema.FA3) as session:
-        # we generate valid invoice from the template because we need the nips to match
-        invoice_xml = InvoiceTemplater.create(
-            template_xml=template_xml,
-            replacements={
-                "#nip#": seller_nip,
-                "#subject2nip#": buyer_nip,
-                "#invoicing_date#": datetime.now(tz=timezone.utc).date().isoformat(),
-                "#invoice_number#": str(int(time.time() * 1000)),
-            },
+        invoice_xml = build_sample_invoice_xml(
+            seller_nip=seller_nip,
+            buyer_nip=buyer_nip,
+            issue_date=datetime.now(tz=timezone.utc).date(),
+            invoice_number=str(int(time.time() * 1000)),
         )
         result = session.send_invoice(invoice_xml=invoice_xml)
         print(f"Invoice sent: {result.reference_number}")
@@ -112,7 +95,7 @@ def run(config: ExampleConfig) -> None:
             description="Scenario buyer",
         )
 
-        send_invoice(client, config.template_path, seller_nip, buyer_nip)
+        send_invoice(client, seller_nip, buyer_nip)
         download_and_export(client, config.downloads_dir, buyer_nip)
 
     print("Done.")

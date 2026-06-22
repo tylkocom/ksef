@@ -88,7 +88,7 @@ Use the authentication method that matches the environment you are working with.
 
 ```python
 from ksef2 import Client, Environment
-from ksef2.core.xades import (
+from ksef2.xades import (
     load_certificate_from_pem,
     load_private_key_from_pem
 )

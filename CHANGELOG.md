@@ -1,8 +1,22 @@
 ## v0.18.1 (2026-06-22)
 
+### Feat
+
+- expose the low-level `ksef2.raw` endpoint API and public raw mappers
+- add the public `ksef2.xades` facade for certificate and XAdES helpers
+
 ### Docs
 
 - sync README OpenAPI target version with KSeF API 2.6.1
+- document the low-level API, public API contract, error handling, and sync code generation
+
+### Refactor
+
+- remove old sample-invoice template helpers and use FA(3) builder-based samples
+
+### Build
+
+- run `just release-check` in CI and the PyPI publish workflow
 
 ## v0.18.0 (2026-06-21)
 

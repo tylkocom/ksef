@@ -24,12 +24,18 @@ typowane modele żądań, pomocniki sesji faktur i builder faktur FA(3).
   certyfikatów, limitów, publicznych lookupów, danych TEST i XAdES.
 - [Konfiguracja klienta](workflows/client-setup.mdx): sync albo async, publiczne
   gałęzie klienta głównego i gałęzie uwierzytelnione.
+- [Kontrakt publicznego API](guides/public-api.md): stabilne ścieżki importu i
+  granice pakietów internal dla kodu aplikacyjnego.
+- [Obsługa błędów](guides/errors.md): łapanie wyjątków SDK, diagnostyka
+  odpowiedzi KSeF i timeouty pollingu.
 - [Budowanie faktur](workflows/building-invoices.mdx): budowanie XML faktury w
   Pythonie.
 - [Wysyłanie faktur](workflows/sending-invoices.mdx): sesje online albo batch i
   wysyłka XML do KSeF.
 - [Przepływy administracyjne](workflows/tokens.mdx): zacznij od tokenów, potem
   używaj uprawnień, certyfikatów i limitów według potrzeb.
+- [Low-level API](raw/overview.md): używaj schema-native wrapperów endpointów do
+  własnego podpisywania, custody szyfrowania albo debugowania payloadów KSeF.
 
 ## Referencja
 
