@@ -13,7 +13,6 @@ stabilne w linii 1.x.
 | `ksef2` | Klienci root, konfiguracja środowiska i transportu, `FormSchema`, `__version__` oraz publiczne wyjątki. |
 | `ksef2.clients` | Konkretne klasy klientów sync i async, gdy potrzebujesz ich w adnotacjach typów. |
 | `ksef2.domain.models` | Modele żądań, odpowiedzi, filtrów, paginacji, tokenów, uprawnień, sesji i batchy. |
-| `ksef2.fa3` | Builder faktur FA(3) i publiczne modele domenowe FA(3). |
 | `ksef2.xades` | Ładowanie certyfikatów, generowanie certyfikatów TEST, lokalne podpisy XAdES i `LocalSigner`. |
 | `ksef2.profiles` | Helpery konfiguracji profili zgodnych z `ksef2-cli`. |
 | `ksef2.raw` | Low-level klienty endpointów, schema-native modele `spec` i `supp` oraz helpery kryptograficzne. |
@@ -26,7 +25,6 @@ Preferuj najwyższy poziom importu pasujący do workflow:
 ```python
 from ksef2 import Client, Environment, FormSchema, KSeFApiError
 from ksef2.domain.models import InvoicesFilter, InvoiceMetadataParams
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
 from ksef2.xades import load_certificate_from_pem, load_private_key_from_pem
 ```
 

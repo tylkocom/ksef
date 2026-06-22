@@ -24,11 +24,13 @@ from ksef2.domain.models.testdata import (
     Permission,
 )
 from ksef2.endpoints.session import SessionEndpoints
-from tests.integration.sample_invoice import build_sample_invoice_xml
+from tests.integration.conftest import KSeFCredentials
+from tests.integration.invoice_payload import invoice_seller_nip
+from tests.integration.invoice_payload import load_test_invoice_xml
 
 
 @pytest.fixture(scope="module")
-def workflow_context():
+def workflow_context(ksef_credentials: KSeFCredentials):
     """Full workflow: testdata → auth → open session → send invoice.
 
     Yields a dict with all context needed by individual tests.
@@ -36,17 +38,18 @@ def workflow_context():
     """
     client = Client(environment=Environment.TEST)
 
-    seller_nip = generate_nip()
+    seller_nip = invoice_seller_nip(ksef_credentials.subject_nip)
     buyer_nip = generate_nip()
     person_nip = generate_nip()
     person_pesel = generate_pesel()
 
     with client.testdata.temporal() as temp:
-        temp.create_subject(
-            nip=seller_nip,
-            subject_type="enforcement_authority",
-            description="Workflow test seller",
-        )
+        if seller_nip != ksef_credentials.subject_nip:
+            temp.create_subject(
+                nip=seller_nip,
+                subject_type="enforcement_authority",
+                description="Workflow test seller",
+            )
         temp.create_subject(
             nip=buyer_nip,
             subject_type="enforcement_authority",
@@ -81,12 +84,7 @@ def workflow_context():
         access_token = auth.access_token
 
         with auth.online_session(form_code=FormSchema.FA3) as session:
-            invoice_xml = build_sample_invoice_xml(
-                seller_nip=seller_nip,
-                buyer_nip=buyer_nip,
-                invoice_number=str(int(time.time())),
-            )
-            result = session.send_invoice(invoice_xml=invoice_xml)
+            result = session.send_invoice(invoice_xml=load_test_invoice_xml())
 
             # Give KSeF time to process the invoice
             time.sleep(5)
@@ -220,20 +218,21 @@ def test_resume_session_from_state(workflow_context):
 
 
 @pytest.mark.integration
-def test_get_session_upo_by_reference():
+def test_get_session_upo_by_reference(ksef_credentials: KSeFCredentials):
     """A closed online session exposes a collective UPO by reference number."""
     client = Client(environment=Environment.TEST)
-    seller_nip = generate_nip()
+    seller_nip = invoice_seller_nip(ksef_credentials.subject_nip)
     buyer_nip = generate_nip()
     person_nip = generate_nip()
     person_pesel = generate_pesel()
 
     with client.testdata.temporal() as temp:
-        temp.create_subject(
-            nip=seller_nip,
-            subject_type="enforcement_authority",
-            description="Session UPO test seller",
-        )
+        if seller_nip != ksef_credentials.subject_nip:
+            temp.create_subject(
+                nip=seller_nip,
+                subject_type="enforcement_authority",
+                description="Session UPO test seller",
+            )
         temp.create_subject(
             nip=buyer_nip,
             subject_type="enforcement_authority",
@@ -261,12 +260,7 @@ def test_get_session_upo_by_reference():
         )
 
         with auth.online_session(form_code=FormSchema.FA3) as session:
-            invoice_xml = build_sample_invoice_xml(
-                seller_nip=seller_nip,
-                buyer_nip=buyer_nip,
-                invoice_number=f"UPO-{int(time.time())}",
-            )
-            _ = session.send_invoice(invoice_xml=invoice_xml)
+            _ = session.send_invoice(invoice_xml=load_test_invoice_xml())
             state = session.get_state()
 
         resumed = auth.resume_online_session(state=state)

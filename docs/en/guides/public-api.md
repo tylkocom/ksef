@@ -13,7 +13,6 @@ They are the paths intended to remain stable through the 1.x line.
 | `ksef2` | Root clients, environment and transport config, `FormSchema`, `__version__`, and public exceptions. |
 | `ksef2.clients` | Concrete sync and async client classes when you need them for type annotations. |
 | `ksef2.domain.models` | SDK request, response, filter, pagination, token, permission, session, and batch models. |
-| `ksef2.fa3` | FA(3) invoice builder and public FA(3) domain models. |
 | `ksef2.xades` | Certificate loading, TEST certificate generation, local XAdES signing helpers, and `LocalSigner`. |
 | `ksef2.profiles` | Local `ksef2-cli` compatible profile config helpers. |
 | `ksef2.raw` | Low-level endpoint clients, schema-native `spec` and `supp` models, and low-level crypto helpers. |
@@ -26,7 +25,6 @@ Prefer the highest-level import that fits the workflow:
 ```python
 from ksef2 import Client, Environment, FormSchema, KSeFApiError
 from ksef2.domain.models import InvoicesFilter, InvoiceMetadataParams
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
 from ksef2.xades import load_certificate_from_pem, load_private_key_from_pem
 ```
 

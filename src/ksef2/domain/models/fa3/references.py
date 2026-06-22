@@ -1,36 +1,11 @@
-"""Reusable FA(3) draft helper models."""
+"""FA(3) invoice reference helper models."""
 
 from datetime import date
-from decimal import Decimal, ROUND_HALF_UP
-from enum import StrEnum
+from decimal import Decimal
 
-from pydantic import field_validator, model_validator
+from pydantic import model_validator
 
 from ksef2.domain.models import KSeFBaseModel
-
-
-def round_pln(value: Decimal) -> Decimal:
-    """Round a monetary amount using standard PLN precision."""
-    return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-
-
-class DraftIntent(StrEnum):
-    """High-level invoice intent used by draft helpers."""
-
-    STANDARD = "VAT"
-    CORRECTION = "KOR"
-    ADVANCE = "ZAL"
-    SETTLEMENT = "ROZ"
-    MARGIN = "MARZA"
-
-
-class MarginProcedure(StrEnum):
-    """Margin procedure variants supported by FA(3) annotations."""
-
-    TRAVEL_AGENCY = "travel_agency"
-    USED_GOODS = "used_goods"
-    ARTWORKS = "artworks"
-    COLLECTIBLES_AND_ANTIQUES = "collectibles_and_antiques"
 
 
 class CorrectedInvoiceReference(KSeFBaseModel):
@@ -79,31 +54,3 @@ class AdvanceInvoiceReference(KSeFBaseModel):
                 "deduction_amount and deduction_reason must be provided together"
             )
         return self
-
-
-class SettlementCharge(KSeFBaseModel):
-    """Additional settlement charge included in a draft invoice."""
-
-    amount: Decimal
-    reason: str
-
-    @field_validator("amount")
-    @classmethod
-    def validate_amount(cls, value: Decimal) -> Decimal:
-        if value <= Decimal("0.00"):
-            raise ValueError("amount must be greater than zero")
-        return round_pln(value)
-
-
-class SettlementDeduction(KSeFBaseModel):
-    """Settlement deduction included in a draft invoice."""
-
-    amount: Decimal
-    reason: str
-
-    @field_validator("amount")
-    @classmethod
-    def validate_amount(cls, value: Decimal) -> Decimal:
-        if value <= Decimal("0.00"):
-            raise ValueError("amount must be greater than zero")
-        return round_pln(value)

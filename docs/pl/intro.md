@@ -4,7 +4,7 @@ description: Punkt startowy polskiej dokumentacji ksef2 SDK.
 ---
 
 ksef2 to SDK Pythona dla API KSeF v2. Udostępnia klientów sync i async,
-typowane modele żądań, pomocniki sesji faktur i builder faktur FA(3).
+typowane modele żądań, pomocniki sesji faktur i low-level dostęp do endpointów.
 
 > **Nieoficjalne SDK.** ksef2 jest społecznościowo utrzymywanym SDK dla
 > Pythona. Nie jest publikowane, zatwierdzane ani wspierane przez Ministerstwo
@@ -28,8 +28,6 @@ typowane modele żądań, pomocniki sesji faktur i builder faktur FA(3).
   granice pakietów internal dla kodu aplikacyjnego.
 - [Obsługa błędów](guides/errors.md): łapanie wyjątków SDK, diagnostyka
   odpowiedzi KSeF i timeouty pollingu.
-- [Budowanie faktur](workflows/building-invoices.mdx): budowanie XML faktury w
-  Pythonie.
 - [Wysyłanie faktur](workflows/sending-invoices.mdx): sesje online albo batch i
   wysyłka XML do KSeF.
 - [Przepływy administracyjne](workflows/tokens.mdx): zacznij od tokenów, potem

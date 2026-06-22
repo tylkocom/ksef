@@ -12,7 +12,7 @@
 
 ### Refactor
 
-- remove legacy sample XML helpers and assets; use FA(3) builder-based samples
+- remove the FA(3) invoice builder and legacy generated sample-invoice helpers
 
 ### Build
 

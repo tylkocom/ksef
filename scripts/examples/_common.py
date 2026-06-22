@@ -1,10 +1,9 @@
-from datetime import date
-from decimal import Decimal
+import os
 from pathlib import Path
 
-from ksef2.fa3 import FA3InvoiceBuilder, VatRate
-
 _MARKER = "pyproject.toml"
+EXAMPLE_INVOICE_XML_ENV = "KSEF2_EXAMPLE_INVOICE_XML"
+EXAMPLE_SELLER_NIP_ENV = "KSEF2_EXAMPLE_SELLER_NIP"
 
 
 def repo_root() -> Path:
@@ -15,48 +14,16 @@ def repo_root() -> Path:
     raise FileNotFoundError("Could not find repo root")
 
 
-def build_sample_invoice_xml(
-    *,
-    seller_nip: str,
-    invoice_number: str,
-    issue_date: date | None = None,
-    buyer_nip: str | None = None,
-) -> bytes:
-    issued_on = issue_date or date.today()
-    buyer_country_code = "PL" if buyer_nip is not None else "DE"
+def required_env(name: str) -> str:
+    value = os.environ.get(name)
+    if value:
+        return value
+    raise RuntimeError(f"Set {name} before running this example.")
 
-    builder = (
-        FA3InvoiceBuilder()
-        .header(system_info="ksef2 example")
-        .seller(
-            name="Example Seller",
-            tax_id=seller_nip,
-            country_code="PL",
-            address_line_1="ul. Przykladowa 1",
-            address_line_2="00-001 Warszawa",
-        )
-        .buyer(
-            name="Example Buyer",
-            tax_id=buyer_nip,
-            country_code=buyer_country_code,
-            address_line_1="Example Street 1",
-            address_line_2="10115 Berlin",
-        )
-        .standard()
-        .issue_place("Warszawa")
-        .issue_date(issued_on)
-        .invoice_number(invoice_number)
-        .rows()
-        .add_line(
-            name="Example service",
-            supply_date=issued_on,
-            unit_of_measure="szt.",
-            quantity=Decimal("1"),
-            unit_price_net=Decimal("100.00"),
-            vat_rate=VatRate.VAT_23,
-        )
-        .done()
-        .done()
-    )
 
-    return builder.to_xml().encode("utf-8")
+def example_invoice_xml_path() -> Path:
+    return Path(required_env(EXAMPLE_INVOICE_XML_ENV)).expanduser()
+
+
+def example_seller_nip() -> str:
+    return required_env(EXAMPLE_SELLER_NIP_ENV)
