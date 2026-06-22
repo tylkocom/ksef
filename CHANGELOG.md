@@ -12,7 +12,7 @@
 
 ### Refactor
 
-- remove old sample-invoice template helpers and use FA(3) builder-based samples
+- remove legacy sample XML helpers and assets; use FA(3) builder-based samples
 
 ### Build
 
@@ -307,7 +307,6 @@
 - update example scripts and add session workflow
 - add invoice status, UPO endpoints, and session query support
 - add UPO_NOT_FOUND and NOT_PROCESSED_YET exception codes
-- add InvoiceFactory for template-based invoice creation
 
 ### Fix
 

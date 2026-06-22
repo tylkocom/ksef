@@ -176,13 +176,7 @@ def test_example_batch_export_to_pdf(tmp_path: Path) -> None:
 
     batch_pdf_example.run(
         batch_pdf_example.ExampleConfig(
-            source_dir=(
-                Path(__file__).parents[2]
-                / "docs"
-                / "assets"
-                / "sample_invoices"
-                / "fa3"
-            ),
+            source_dir=(Path(__file__).parents[2] / "schemas" / "FA3" / "samples"),
             output_dir=tmp_path,
         )
     )
