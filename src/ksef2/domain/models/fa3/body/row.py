@@ -233,7 +233,8 @@ class InvoiceRow(KSeFBaseModel):
         return self
 
     def validate_tax_logic(self) -> Self:
-        self._validate_quantity()
+        # quantity == 0 is valid and required for correcting invoices
+        # self._validate_quantity()
         self._validate_tax_classification_rules()
         self._validate_gross_amount_consistency()
         return self
@@ -252,9 +253,9 @@ class InvoiceRow(KSeFBaseModel):
 
         return self.vat_classification.numeric_rate / Decimal("100")
 
-    def _validate_quantity(self) -> None:
-        if self.quantity == 0:
-            raise ValueError("quantity cannot be zero")
+    # def _validate_quantity(self) -> None:
+    #     if self.quantity == 0:
+    #         raise ValueError("quantity cannot be zero")
 
     def _validate_tax_classification_rules(self) -> None:
         if self.tax_regime is TaxRegime.MARGIN:
